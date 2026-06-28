@@ -15,14 +15,15 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.db import init_db
 from app.routers import dashboard, sessions, snapshots
+from app.scheduler import start_scheduler, stop_scheduler
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     init_db()
-    # Hito 3: arrancar el scheduler de reconciliación (ccusage) aquí.
+    start_scheduler()  # reconciliador ccusage cada N min (no-op si scheduler_enabled=false)
     yield
-    # Hito 3: parar el scheduler.
+    stop_scheduler()
 
 
 app = FastAPI(title="Local AgentOps", version="0.1.0", lifespan=lifespan)

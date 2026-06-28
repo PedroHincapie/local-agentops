@@ -1,0 +1,21 @@
+{
+  "blocks": [
+    {
+      "id": "2026-06-28T16:00:00.000Z",
+      "startTime": "2026-06-28T16:00:00.000Z",
+      "endTime": "2026-06-28T21:00:00.000Z",
+      "isActive": true,
+      "isGap": false,
+      "entries": 53,
+      "costUSD": 3.994281,
+      "models": ["claude-opus-4-8"],
+      "tokenCounts": {
+        "inputTokens": 3136,
+        "outputTokens": 39875,
+        "cacheCreationInputTokens": 98515,
+        "cacheReadInputTokens": 3993152
+      },
+      "totalTokens": 4134678
+    }
+  ]
+}

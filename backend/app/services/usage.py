@@ -21,10 +21,16 @@ _MIN_BURN_SECONDS = 60
 
 
 def cost_today_usd(db: Session, workday_id: str) -> float | None:
-    """Suma del costo máximo (acumulado) por sesión en la jornada. None si no hay datos."""
+    """Suma del costo máximo (acumulado) por sesión en la jornada. None si no hay datos.
+
+    Solo considera el feed ``statusline`` (costo por sesión acumulado): el costo que
+    reporta ccusage es el total del bloque de 5h, sobre otra base contable; mezclarlos
+    duplicaría. ccusage queda como respaldo histórico, no se suma aquí.
+    """
     rows = db.exec(
         select(func.max(UsageSnapshot.cost_session_usd))
         .where(UsageSnapshot.workday_id == workday_id)
+        .where(UsageSnapshot.source_name == "statusline")
         .where(UsageSnapshot.cost_session_usd.is_not(None))  # type: ignore[union-attr]
         .group_by(UsageSnapshot.session_id)
     ).all()

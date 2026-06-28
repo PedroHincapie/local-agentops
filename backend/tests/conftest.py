@@ -12,6 +12,8 @@ from pathlib import Path
 
 _TMPDIR = tempfile.mkdtemp(prefix="agentops-test-")
 os.environ["AGENTOPS_DB_URL"] = f"sqlite:///{_TMPDIR}/test.db"
+# Tests no arrancan el scheduler real (no invocan ccusage en background).
+os.environ["AGENTOPS_SCHEDULER_ENABLED"] = "false"
 
 import pytest  # noqa: E402
 from sqlmodel import SQLModel  # noqa: E402

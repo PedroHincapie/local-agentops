@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     threshold_critical: float = 95
 
     reconcile_interval_seconds: int = 300
+    scheduler_enabled: bool = True  # tests/CI pueden apagarlo (AGENTOPS_SCHEDULER_ENABLED=false)
     frontend_dist: str = "../frontend/dist"
 
 

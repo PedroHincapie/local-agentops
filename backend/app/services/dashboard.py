@@ -61,18 +61,26 @@ def build_dashboard(session: Session) -> dict[str, Any]:
     workday = session.exec(
         select(Workday).where(Workday.status == "active")
     ).first()
+    # Feed oficial en vivo: el último snapshot del statusline. Los ticks de ccusage
+    # (reconciliación, sin rate_limits) no deben degradar status ni ventanas.
     snap = session.exec(
+        select(UsageSnapshot)
+        .where(UsageSnapshot.source_name == "statusline")
+        .order_by(UsageSnapshot.captured_at.desc())  # type: ignore[attr-defined]
+    ).first()
+    # last_snapshot_at refleja CUALQUIER fuente (incluida la reconciliación ccusage).
+    last_any = session.exec(
         select(UsageSnapshot).order_by(UsageSnapshot.captured_at.desc())  # type: ignore[attr-defined]
     ).first()
 
     if snap is None:
         return {
             "generated_at": _isoformat(now),
-            "status": "critical",  # sin datos confiables
+            "status": "critical",  # sin datos confiables del feed en vivo
             "workday": _workday_view(workday),
             "current_session": None,
             "metrics": None,
-            "last_snapshot_at": None,
+            "last_snapshot_at": _isoformat(last_any.captured_at) if last_any else None,
             "recommendations": [],
         }
 
@@ -110,7 +118,7 @@ def build_dashboard(session: Session) -> dict[str, Any]:
                 snap.rate_limit_7d_percentage, snap.rate_limit_7d_resets_at, now
             ),
         },
-        "last_snapshot_at": _isoformat(snap.captured_at),
+        "last_snapshot_at": _isoformat(last_any.captured_at if last_any else snap.captured_at),
         "recommendations": [],  # Hito 4
     }
 
