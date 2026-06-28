@@ -11,9 +11,10 @@ from typing import Any
 
 from sqlmodel import Session, select
 
-from app.models import Project, UsageSnapshot, Workday
+from app.models import AgentSession, Project, UsageSnapshot, Workday
 from app.services.sessions import current_session
 from app.services.status import derive_status
+from app.services.usage import burn_rate_usd_per_hour, cost_today_usd
 
 
 def _isoformat(dt: datetime | None) -> str | None:
@@ -76,16 +77,17 @@ def build_dashboard(session: Session) -> dict[str, Any]:
         }
 
     status = derive_status(snap.rate_limit_5h_percentage, snap.rate_limit_7d_percentage)
+    agent_session = current_session(session)
     return {
         "generated_at": _isoformat(now),
         "status": status,
         "workday": _workday_view(workday),
-        "current_session": _current_session_view(session, snap),
+        "current_session": _current_session_view(session, snap, agent_session),
         "metrics": {
             "model_name": snap.model_name,
             "cost_session_usd": snap.cost_session_usd,
-            "cost_today_usd": None,  # Hito 2
-            "burn_rate_usd_per_hour": None,  # Hito 2 (estimated)
+            "cost_today_usd": cost_today_usd(session, snap.workday_id),
+            "burn_rate_usd_per_hour": burn_rate_usd_per_hour(snap, agent_session, now),
             "tokens": {
                 "total_input_tokens": snap.total_input_tokens,
                 "total_output_tokens": snap.total_output_tokens,
@@ -114,11 +116,10 @@ def build_dashboard(session: Session) -> dict[str, Any]:
 
 
 def _current_session_view(
-    session: Session, snap: UsageSnapshot
+    session: Session, snap: UsageSnapshot, agent_session: AgentSession | None
 ) -> dict[str, Any]:
     """current_session del dashboard (§4.2): combina la sesión persistida (git_branch,
     métricas manuales, started_at) con datos del último snapshot (nombre, effort)."""
-    agent_session = current_session(session)
     project = (
         session.get(Project, agent_session.project_id)
         if agent_session and agent_session.project_id

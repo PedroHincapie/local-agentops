@@ -14,8 +14,18 @@ _TMPDIR = tempfile.mkdtemp(prefix="agentops-test-")
 os.environ["AGENTOPS_DB_URL"] = f"sqlite:///{_TMPDIR}/test.db"
 
 import pytest  # noqa: E402
+from sqlmodel import SQLModel  # noqa: E402
+
+from app.db import engine  # noqa: E402
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture(autouse=True)
+def _clean_db() -> None:
+    """Cada test arranca con una BD vacía: aislamiento determinista."""
+    SQLModel.metadata.drop_all(engine)
+    SQLModel.metadata.create_all(engine)
 
 
 @pytest.fixture
