@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 
 from app.models import UsageSnapshot, Workday
 from app.normalizer import normalize
+from app.services.recommendations import refresh_for_snapshot
 from app.services.sessions import get_or_create_session
 from app.services.status import derive_status
 
@@ -78,6 +79,18 @@ def ingest(session: Session, raw: dict[str, Any]) -> dict[str, Any]:
     )
     session.add(snapshot)
     session.add(workday)
+
+    # Motor de recomendaciones (Hito 4): solo sobre el feed statusline. Crea una nueva
+    # recomendación si el estado cambió de tipo respecto a la última de la jornada.
+    refresh_for_snapshot(
+        session,
+        workday.id,
+        agent_session.id if agent_session else None,
+        status,
+        fields.get("rate_limit_5h_percentage"),
+        fields.get("rate_limit_7d_percentage"),
+    )
+
     session.commit()
     session.refresh(snapshot)
 

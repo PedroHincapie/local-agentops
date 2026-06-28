@@ -2,9 +2,9 @@
 
 Hito 0: ``Workday`` y ``UsageSnapshot`` (núcleo).
 Hito 1: ``Project`` y ``AgentSession`` (auto-detección de proyecto/sesión + métricas
-manuales). El resto (``usage_events``, ``recommendations``) se añade en hitos
-posteriores. NO existen tablas ``providers`` / ``provider_capabilities`` (diseño
-multi-provider descartado en el MVP).
+manuales). Hito 4: ``Recommendation`` (motor de recomendaciones). El resto
+(``usage_events``) se añade en hitos posteriores. NO existen tablas ``providers`` /
+``provider_capabilities`` (diseño multi-provider descartado en el MVP).
 """
 from __future__ import annotations
 
@@ -117,3 +117,23 @@ class UsageSnapshot(SQLModel, table=True):
     rate_limit_5h_resets_at: datetime | None = None
     rate_limit_7d_percentage: float | None = None
     rate_limit_7d_resets_at: datetime | None = None
+
+
+class Recommendation(SQLModel, table=True):
+    """Recomendación operativa generada por el motor (Hito 4).
+
+    ``acknowledged_at`` cubre dos casos: el usuario la marcó como vista (ack), o fue
+    superseded por un cambio de estado. "Activa" = ``acknowledged_at is None``.
+    """
+
+    __tablename__ = "recommendations"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    workday_id: str = Field(foreign_key="workdays.id", index=True)
+    session_id: str | None = Field(default=None, foreign_key="agent_sessions.id", index=True)
+    recommendation_type: str  # continue | reduce_context | reserve_for_critical | pause | ...
+    severity: str  # info | warning | critical
+    message: str
+    reason: str | None = None
+    created_at: datetime = Field(default_factory=_utcnow, index=True)
+    acknowledged_at: datetime | None = None

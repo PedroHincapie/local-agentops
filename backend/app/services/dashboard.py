@@ -12,6 +12,7 @@ from typing import Any
 from sqlmodel import Session, select
 
 from app.models import AgentSession, Project, UsageSnapshot, Workday
+from app.services.recommendations import active_recommendations, view_brief
 from app.services.sessions import current_session
 from app.services.status import derive_status
 from app.services.usage import burn_rate_usd_per_hour, cost_today_usd
@@ -119,7 +120,10 @@ def build_dashboard(session: Session) -> dict[str, Any]:
             ),
         },
         "last_snapshot_at": _isoformat(last_any.captured_at if last_any else snap.captured_at),
-        "recommendations": [],  # Hito 4
+        "recommendations": [
+            view_brief(r)
+            for r in (active_recommendations(session, workday.id) if workday else [])
+        ],
     }
 
 
