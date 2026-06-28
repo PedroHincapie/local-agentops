@@ -11,7 +11,8 @@ from typing import Any
 
 from sqlmodel import Session, select
 
-from app.models import UsageSnapshot, Workday
+from app.models import Project, UsageSnapshot, Workday
+from app.services.sessions import current_session
 from app.services.status import derive_status
 
 
@@ -79,18 +80,7 @@ def build_dashboard(session: Session) -> dict[str, Any]:
         "generated_at": _isoformat(now),
         "status": status,
         "workday": _workday_view(workday),
-        "current_session": {
-            "id": snap.session_external_id,
-            "session_name": snap.session_name,
-            "project_name": _basename(snap.project_path),
-            "project_path": snap.project_path,
-            "model_name": snap.model_name,
-            "git_branch": None,  # derivado en Hito 1
-            "effort_level": snap.effort_level,
-            "task_type": None,  # manual, Hito 1
-            "objective": None,  # manual, Hito 1
-            "started_at": None,  # sesión persistida en Hito 1
-        },
+        "current_session": _current_session_view(session, snap),
         "metrics": {
             "model_name": snap.model_name,
             "cost_session_usd": snap.cost_session_usd,
@@ -120,6 +110,31 @@ def build_dashboard(session: Session) -> dict[str, Any]:
         },
         "last_snapshot_at": _isoformat(snap.captured_at),
         "recommendations": [],  # Hito 4
+    }
+
+
+def _current_session_view(
+    session: Session, snap: UsageSnapshot
+) -> dict[str, Any]:
+    """current_session del dashboard (§4.2): combina la sesión persistida (git_branch,
+    métricas manuales, started_at) con datos del último snapshot (nombre, effort)."""
+    agent_session = current_session(session)
+    project = (
+        session.get(Project, agent_session.project_id)
+        if agent_session and agent_session.project_id
+        else None
+    )
+    return {
+        "id": agent_session.session_external_id if agent_session else snap.session_external_id,
+        "session_name": snap.session_name,
+        "project_name": project.name if project else _basename(snap.project_path),
+        "project_path": snap.project_path,
+        "model_name": agent_session.model if agent_session else snap.model_name,
+        "git_branch": agent_session.git_branch if agent_session else None,
+        "effort_level": snap.effort_level,
+        "task_type": agent_session.task_type if agent_session else None,
+        "objective": agent_session.objective if agent_session else None,
+        "started_at": _isoformat(agent_session.started_at) if agent_session else None,
     }
 
 

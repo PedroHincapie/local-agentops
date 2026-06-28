@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 
 from app.models import UsageSnapshot, Workday
 from app.normalizer import normalize
+from app.services.sessions import get_or_create_session
 from app.services.status import derive_status
 
 
@@ -52,6 +53,9 @@ def ingest(session: Session, raw: dict[str, Any]) -> dict[str, Any]:
         workday.initial_state = status
     workday.current_state = status
 
+    # Auto-detección de proyecto y sesión (Hito 1). None si el tick no trae session_id.
+    agent_session = get_or_create_session(session, workday, fields)
+
     # Dedup: si el último snapshot de la misma sesión tiene el mismo hash, se descarta.
     previous = last_snapshot_for_session(session, fields.get("session_external_id"))
     if previous is not None and previous.content_hash == fields["content_hash"]:
@@ -68,6 +72,7 @@ def ingest(session: Session, raw: dict[str, Any]) -> dict[str, Any]:
 
     snapshot = UsageSnapshot(
         workday_id=workday.id,
+        session_id=agent_session.id if agent_session else None,
         captured_at=datetime.now(UTC),
         **fields,
     )

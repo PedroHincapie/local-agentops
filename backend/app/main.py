@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.db import init_db
-from app.routers import dashboard, snapshots
+from app.routers import dashboard, sessions, snapshots
 
 
 @asynccontextmanager
@@ -29,6 +29,7 @@ app = FastAPI(title="Local AgentOps", version="0.1.0", lifespan=lifespan)
 
 app.include_router(snapshots.router)
 app.include_router(dashboard.router)
+app.include_router(sessions.router)
 
 
 @app.get("/api/ping")

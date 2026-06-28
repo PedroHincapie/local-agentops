@@ -1,9 +1,10 @@
 """Modelos SQLModel.
 
-Hito 0: ``Workday`` y ``UsageSnapshot`` (núcleo). El esquema completo
-(``projects``, ``agent_sessions``, ``usage_events``, ``recommendations``) se añade
-en hitos posteriores. NO existen tablas ``providers`` / ``provider_capabilities``
-(diseño multi-provider descartado en el MVP).
+Hito 0: ``Workday`` y ``UsageSnapshot`` (núcleo).
+Hito 1: ``Project`` y ``AgentSession`` (auto-detección de proyecto/sesión + métricas
+manuales). El resto (``usage_events``, ``recommendations``) se añade en hitos
+posteriores. NO existen tablas ``providers`` / ``provider_capabilities`` (diseño
+multi-provider descartado en el MVP).
 """
 from __future__ import annotations
 
@@ -33,11 +34,47 @@ class Workday(SQLModel, table=True):
     current_state: str | None = None
 
 
+class Project(SQLModel, table=True):
+    """Proyecto auto-detectado desde ``workspace.project_dir`` del statusline."""
+
+    __tablename__ = "projects"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    name: str  # basename de repository_path
+    repository_path: str = Field(index=True, unique=True)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class AgentSession(SQLModel, table=True):
+    """Sesión de trabajo, auto-detectada por ``session_id`` de Claude Code.
+
+    ``task_type`` y ``objective`` son los únicos campos ``manual`` (los anota el
+    usuario vía ``PATCH /api/sessions/{id}``).
+    """
+
+    __tablename__ = "agent_sessions"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    workday_id: str = Field(foreign_key="workdays.id", index=True)
+    project_id: str | None = Field(default=None, foreign_key="projects.id", index=True)
+    session_external_id: str = Field(index=True, unique=True)  # session_id de Claude Code
+    model: str | None = None
+    git_branch: str | None = None  # derivado por git (no viene en el statusline)
+    task_type: str | None = None  # manual
+    objective: str | None = None  # manual
+    started_at: datetime = Field(default_factory=_utcnow)
+    ended_at: datetime | None = None
+    status: str = "active"  # active | closed
+    summary: str | None = None
+
+
 class UsageSnapshot(SQLModel, table=True):
     __tablename__ = "usage_snapshots"
 
     id: str = Field(default_factory=_uuid, primary_key=True)
     workday_id: str = Field(foreign_key="workdays.id", index=True)
+    session_id: str | None = Field(default=None, foreign_key="agent_sessions.id", index=True)
     captured_at: datetime = Field(default_factory=_utcnow, index=True)
 
     # Clasificación de origen (CLAUDE.md: nunca inventar valores).
