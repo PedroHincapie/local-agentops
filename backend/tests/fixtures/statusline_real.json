@@ -1,0 +1,43 @@
+{
+  "session_id": "623a283b-7b38-4c89-913e-4b95e490a0c1",
+  "session_name": "Analizar el propósito del proyecto",
+  "transcript_path": "/Users/imagemaker/.claude/projects/proyecto-agentOps/623a283b.jsonl",
+  "version": "2.1.195",
+  "workspace": {
+    "project_dir": "/Users/imagemaker/Documents/Proyectos/Personal/proyecto-agentOps",
+    "current_dir": "/Users/imagemaker/Documents/Proyectos/Personal/proyecto-agentOps"
+  },
+  "model": {
+    "id": "claude-opus-4-8",
+    "display_name": "Opus 4.8"
+  },
+  "effort": {
+    "level": "high"
+  },
+  "cost": {
+    "total_cost_usd": 0.3655365,
+    "total_duration_ms": 884213,
+    "total_lines_added": 412,
+    "total_lines_removed": 73
+  },
+  "context_window": {
+    "context_window_size": 1000000,
+    "used_percentage": 3,
+    "total_input_tokens": 32371,
+    "total_output_tokens": 464,
+    "current_usage": {
+      "cache_creation_input_tokens": 2046,
+      "cache_read_input_tokens": 30323
+    }
+  },
+  "rate_limits": {
+    "five_hour": {
+      "used_percentage": 45,
+      "resets_at": 1782579600
+    },
+    "seven_day": {
+      "used_percentage": 7,
+      "resets_at": 1783062000
+    }
+  }
+}
