@@ -14,7 +14,14 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.db import init_db
-from app.routers import dashboard, recommendations, sessions, snapshots
+from app.routers import (
+    dashboard,
+    health,
+    recommendations,
+    sessions,
+    snapshots,
+    usage,
+)
 from app.scheduler import start_scheduler, stop_scheduler
 
 
@@ -32,6 +39,8 @@ app.include_router(snapshots.router)
 app.include_router(dashboard.router)
 app.include_router(sessions.router)
 app.include_router(recommendations.router)
+app.include_router(usage.router)
+app.include_router(health.router)
 
 
 @app.get("/api/ping")
