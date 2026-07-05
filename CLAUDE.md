@@ -4,14 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-This repo is currently **spec-only**. It contains:
-- `README.md` — full product/vision spec, in Spanish (**Codex-centric, see divergence note below**).
+The **backend MVP is implemented** (Hitos 0–4 + all §4 contract endpoints) on branch `feat/walking-skeleton`. The repo contains:
+- `backend/` — FastAPI app (`app/`), tests (`tests/`), `pyproject.toml`. See "Build / test / run" below.
+- `hook/statusline-hook.sh` — the statusline hook wired into `~/.claude/settings.json` (primary capture).
 - `docs/API_CONTRACT.md` — the **authoritative REST contract** for the Claude Code MVP (front/back agreement).
+- `docs/INSTALL.md` — local install/run guide (backend + hook wiring).
+- `README.md` — product/vision spec, in Spanish (aligned to the Claude Code design).
 - `CLAUDE.md` (this file) and `.gitignore`.
 
-No backend, frontend, build config, or tests exist yet. The `.gitignore` already anticipates the stack: Python (pytest, ruff, mypy, `.venv`) and Node/Vite. When implementing, follow the architecture below.
+The **frontend is not in this repo yet** — it is delivered by Claude Design as a static SPA (see Stack). Capture is live: the hook forwards each statusline tick to `POST /api/snapshots`; the APScheduler reconciler runs every 5 min.
 
-> **Documentation divergence — read this first.** `README.md` describes an **earlier vision** where **Codex** (ChatGPT-account auth) was the MVP provider, with a multi-provider schema (`providers`, `provider_capabilities` tables), port `8000`, and APScheduler as the *primary* capture. The project has since **pivoted to Claude Code only** (statusline hook as primary capture, `ccusage` as reconciler, no multi-provider layer, port `8787`). **For the MVP, this file + `docs/API_CONTRACT.md` are the source of truth, not the README's API/schema sections.** Rewriting `README.md` to match the Claude Code design is pending work; until then, when the README conflicts with this file or the contract, the contract wins.
+> **Source of truth.** The project targets **Claude Code only** (statusline hook as primary capture, `ccusage` as reconciler, no multi-provider layer, port `8787`). `README.md` has been **reconciled** to this design. The historical Codex-era vision (ChatGPT-account auth, `providers`/`provider_capabilities` tables, port `8000`, APScheduler as *primary* capture) is **not** the MVP. For endpoint/JSON details, **`docs/API_CONTRACT.md` is authoritative**; when any doc conflicts with the contract, the contract wins.
 
 ## What this is
 
@@ -52,12 +55,28 @@ Flow: `Claude Code → hook → POST /api/snapshots → normalizer → SQLite �
 
 ## Build / test / run
 
-No tooling is committed yet. Per the spec and `.gitignore`, the expected setup once implemented:
-- Backend: Python virtualenv (`.venv`), `pytest` for tests, `ruff` for lint, `mypy` for types. Run with `uvicorn`.
-- Frontend: Node + Vite (`npm run dev` / build to static, copied into the backend's served directory).
-- Install requires Claude Code (ideally v1.2.80+) and `ccusage` available via `npx`/`bunx` (no global install).
+All commands run from `backend/` with the project virtualenv (`.venv`). Deps live in `pyproject.toml` (`.[dev]` for pytest/ruff/mypy). Full install/wiring guide in `docs/INSTALL.md`.
 
-When you add these, document the actual commands here (including how to run a single test).
+```bash
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -e '.[dev]'
+
+# Run the server (API + static SPA on http://127.0.0.1:8787)
+uvicorn app.main:app --host 127.0.0.1 --port 8787          # add --reload in dev
+
+# Quality gates (all three must pass before committing)
+python -m pytest -q                                        # whole suite
+python -m pytest tests/test_workday.py::test_dia_nuevo_cierra_jornada_anterior  # a single test
+ruff check app tests
+mypy app
+```
+
+- **Config:** copy `.env.example` → `.env` (host/port, thresholds, reconciler interval, `AGENTOPS_SCHEDULER_ENABLED`). Env vars are prefixed `AGENTOPS_`.
+- **DB:** SQLite file at `backend/data/local-agentops.db` (WAL), auto-created on startup via `init_db()`. No migrations tool (SQLModel `create_all`); to reset, delete the `.db`/`-wal`/`-shm` files.
+- **Tests** use a temp SQLite file and disable the scheduler (see `tests/conftest.py`); each test starts on a clean DB.
+- **Install** requires Claude Code (ideally v1.2.80+ for `rate_limits`) and `ccusage` via `npx`/`bunx` (no global install).
+- **Frontend:** Node + Vite, delivered by Claude Design; build to static and point `AGENTOPS_FRONTEND_DIST` at the `dist/` — the backend mounts it at `/` if present.
 
 ## Conventions
 
