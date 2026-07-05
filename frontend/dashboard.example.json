@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-06-27T13:45:12Z",
+  "status": "green",
+  "workday": {
+    "id": "2026-06-27",
+    "date": "2026-06-27",
+    "started_at": "2026-06-27T08:30:04Z",
+    "status": "active",
+    "initial_state": "green",
+    "current_state": "green"
+  },
+  "current_session": {
+    "id": "623a283b-7b38-4c89-913e-4b95e490a0c1",
+    "session_name": "Analizar el propósito del proyecto",
+    "project_name": "proyecto-agentOps",
+    "project_path": "/Users/imagemaker/Documents/Proyectos/Personal/proyecto-agentOps",
+    "model_name": "Opus 4.8",
+    "git_branch": "main",
+    "effort_level": "high",
+    "task_type": null,
+    "objective": null,
+    "started_at": "2026-06-27T13:30:00Z"
+  },
+  "metrics": {
+    "model_name": "Opus 4.8",
+    "cost_session_usd": 0.3655365,
+    "cost_today_usd": 1.842,
+    "burn_rate_usd_per_hour": 0.42,
+    "tokens": {
+      "total_input_tokens": 32371,
+      "total_output_tokens": 464,
+      "cache_creation_input_tokens": 2046,
+      "cache_read_input_tokens": 30323
+    },
+    "context": {
+      "used_percentage": 3,
+      "remaining_percentage": 97,
+      "context_window_size": 1000000
+    },
+    "five_hour": {
+      "used_percentage": 45,
+      "resets_at": "2026-06-27T17:00:00Z",
+      "resets_in_human": "3h 14m",
+      "data_quality": "official"
+    },
+    "seven_day": {
+      "used_percentage": 7,
+      "resets_at": "2026-07-03T07:00:00Z",
+      "resets_in_human": "5d 17h",
+      "data_quality": "official"
+    }
+  },
+  "last_snapshot_at": "2026-06-27T13:45:00Z",
+  "recommendations": [
+    {
+      "id": "rec_01",
+      "recommendation_type": "continue",
+      "severity": "info",
+      "message": "Uso bajo. Continúa trabajando con normalidad.",
+      "reason": "Ventana de 5h al 45%, 7d al 7%."
+    }
+  ]
+}
