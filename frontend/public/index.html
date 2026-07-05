@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; }
+  body{ margin:0; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-family:'Geist',system-ui,sans-serif; }
+  input::placeholder, textarea::placeholder{ color:var(--faint,#6b7280); opacity:1; }
+  @keyframes ao-pulse{ 0%,100%{ box-shadow:0 0 0 0 var(--status,#f85149); opacity:1; } 50%{ box-shadow:0 0 18px 1px var(--status,#f85149); opacity:.88; } }
+  @keyframes ao-blink{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+</style>
+</helmet>
+<div style="{{ rootStyle }}">
+<div style="min-height:100vh; padding:22px 26px 60px; font-family:'Geist',system-ui,sans-serif; letter-spacing:-0.01em; background:var(--bg,#0e1013); color:var(--text,#e6e9ee)" data-screen-label="AgentOps Dashboard">
+  <div style="margin: 0 auto; max-width:1240px; display:flex; flex-direction:column; gap:18px">
+
+    <!-- connection bar -->
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; padding:9px 14px; border:1px solid var(--border,#262b33); border-radius:10px; background:var(--panel2,#1b1f26)">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+        <span style="display:inline-flex; align-items:center; gap:7px; padding:4px 9px; border-radius:6px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); font-family:'Geist Mono',monospace; font-size:11px; color:var(--dim,#9aa3af)">
+          <span style="color:#56d364; font-weight:600">GET</span> /api/dashboard
+        </span>
+        <span style="display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--dim,#9aa3af)">
+          <span style="width:8px; height:8px; border-radius:50%; background:{{ connColor }}; {{ connPulse }}"></span>
+          <span style="font-weight:600; color:var(--text,#e6e9ee)">{{ connLabel }}</span>
+          <span style="color:var(--faint,#6b7280)">· actualizado hace</span>
+          <span style="font-family:'Geist Mono',monospace; color:var(--dim,#9aa3af)">{{ snapAgo }}</span>
+        </span>
+        <span style="font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; padding:2px 7px; border-radius:4px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); color:var(--faint,#6b7280)">mock local</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px">
+        <button onClick="{{ refresh }}" style="display:inline-flex; align-items:center; gap:7px; padding:7px 12px; font:inherit; font-size:12px; font-weight:500; color:var(--dim,#9aa3af); background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); border-radius:8px; cursor:pointer">
+          <span style="font-size:13px">↻</span><span>Refrescar</span>
+        </button>
+        <button onClick="{{ toggleTheme }}" style="display:inline-flex; align-items:center; gap:7px; padding:7px 12px; font:inherit; font-size:12px; font-weight:500; color:var(--dim,#9aa3af); background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); border-radius:8px; cursor:pointer">
+          <span style="font-size:13px">{{ themeGlyph }}</span><span>{{ themeLabel }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- header -->
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap">
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap">
+        <div style="display:flex; align-items:center; gap:9px">
+          <div style="width:26px; height:26px; border-radius:7px; background:var(--status,#3fb950); display:flex; align-items:center; justify-content:center; color:#0b0d10; font-weight:700; font-size:13px; font-family:'Geist Mono',monospace">A</div>
+          <div style="display:flex; flex-direction:column; line-height:1.15">
+            <span style="font-size:15px; font-weight:600">{{ projectName }}</span>
+            <span style="font-size:11.5px; color:var(--faint,#6b7280)">Local AgentOps · Claude Code</span>
+          </div>
+        </div>
+        <div style="height:22px; width:1px; background:var(--border,#262b33)"></div>
+        <span style="display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:7px; background:var(--panel2,#1b1f26); border:1px solid var(--border,#262b33); font-size:12px; color:var(--dim,#9aa3af); white-space:nowrap">
+          <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint,#6b7280)">model</span>
+          <span style="font-weight:600; color:var(--text,#e6e9ee); font-family:'Geist Mono',monospace">{{ modelName }}</span>
+        </span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px">
+        <span style="display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:8px; font-size:12.5px; font-weight:600; color:var(--status,#3fb950); background:var(--status-tint,rgba(63,185,80,0.12)); border:1px solid var(--status,#3fb950); white-space:nowrap">
+          <span style="width:8px; height:8px; border-radius:50%; background:var(--status,#3fb950)"></span>
+          {{ statusLabel }}
+        </span>
+      </div>
+    </div>
+
+    <!-- banner -->
+    <sc-if value="{{ showBanner }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ bannerStyle }}">
+        <span style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; padding:3px 8px; border-radius:5px; background:var(--status,#f85149); color:#0b0d10; flex-shrink:0">{{ bannerTag }}</span>
+        <div style="display:flex; flex-direction:column; gap:4px">
+          <span style="font-size:13.5px; font-weight:600; color:var(--text,#e6e9ee)">{{ bannerText }}</span>
+          <span style="font-size:12px; color:var(--dim,#9aa3af)">{{ bannerReason }}</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- HERO: official limit windows -->
+    <div style="display:flex; flex-direction:column; gap:9px">
+      <div style="display:flex; align-items:baseline; gap:9px">
+        <span style="font-size:12px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--dim,#9aa3af); white-space:nowrap">Margen operativo</span>
+        <span style="font-size:11.5px; color:var(--faint,#6b7280)">ventanas de límite oficiales</span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px">
+
+        <!-- 5h -->
+        <div style="position:relative; padding:24px; border-radius:14px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; align-items:center; gap:24px">
+          <div style="position:relative; width:176px; height:176px; flex-shrink:0">
+            <svg width="176" height="176" viewBox="0 0 180 180" style="transform:rotate(-90deg)">
+              <circle cx="90" cy="90" r="78" fill="none" stroke="var(--track,#23272f)" strokeWidth="13"></circle>
+              <circle cx="90" cy="90" r="78" fill="none" stroke="{{ statusColor }}" strokeWidth="13" strokeLinecap="round" strokeDasharray="{{ ringC }}" strokeDashoffset="{{ fiveOffset }}"></circle>
+            </svg>
+            <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px">
+              <span style="font-family:'Geist Mono',monospace; font-size:42px; font-weight:600; line-height:1; color:var(--text,#e6e9ee)">{{ fiveUsed }}<span style="font-size:20px; color:var(--dim,#9aa3af)">%</span></span>
+              <span style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--faint,#6b7280)">usado</span>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:13px; flex:1; min-width:0">
+            <div style="display:flex; align-items:center; gap:8px">
+              <span style="font-size:16px; font-weight:600">Ventana de 5 horas</span>
+              <span style="font-size:9.5px; font-weight:700; letter-spacing:0.1em; padding:3px 7px; border-radius:5px; background:var(--panel2,#1b1f26); border:1px solid var(--border,#262b33); color:{{ fiveQualityColor }}">{{ fiveQualityLabel }}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:3px">
+              <span style="font-size:11.5px; color:var(--faint,#6b7280)">queda disponible</span>
+              <span style="font-family:'Geist Mono',monospace; font-size:22px; font-weight:600; color:{{ statusColor }}">{{ fiveRemaining }}%</span>
+            </div>
+            <div style="display:inline-flex; align-items:center; gap:8px; align-self:flex-start; padding:8px 12px; border-radius:9px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33)">
+              <span style="font-size:11px; color:var(--faint,#6b7280)">reset en</span>
+              <span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600; color:var(--text,#e6e9ee)">{{ fiveReset }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7d -->
+        <div style="position:relative; padding:24px; border-radius:14px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; align-items:center; gap:24px">
+          <div style="position:relative; width:176px; height:176px; flex-shrink:0">
+            <svg width="176" height="176" viewBox="0 0 180 180" style="transform:rotate(-90deg)">
+              <circle cx="90" cy="90" r="78" fill="none" stroke="var(--track,#23272f)" strokeWidth="13"></circle>
+              <circle cx="90" cy="90" r="78" fill="none" stroke="{{ statusColor }}" strokeWidth="13" strokeLinecap="round" strokeDasharray="{{ ringC }}" strokeDashoffset="{{ sevenOffset }}"></circle>
+            </svg>
+            <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px">
+              <span style="font-family:'Geist Mono',monospace; font-size:42px; font-weight:600; line-height:1; color:var(--text,#e6e9ee)">{{ sevenUsed }}<span style="font-size:20px; color:var(--dim,#9aa3af)">%</span></span>
+              <span style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--faint,#6b7280)">usado</span>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:13px; flex:1; min-width:0">
+            <div style="display:flex; align-items:center; gap:8px">
+              <span style="font-size:16px; font-weight:600">Ventana de 7 días</span>
+              <span style="font-size:9.5px; font-weight:700; letter-spacing:0.1em; padding:3px 7px; border-radius:5px; background:var(--panel2,#1b1f26); border:1px solid var(--border,#262b33); color:{{ sevenQualityColor }}">{{ sevenQualityLabel }}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:3px">
+              <span style="font-size:11.5px; color:var(--faint,#6b7280)">queda disponible</span>
+              <span style="font-family:'Geist Mono',monospace; font-size:22px; font-weight:600; color:{{ statusColor }}">{{ sevenRemaining }}%</span>
+            </div>
+            <div style="display:inline-flex; align-items:center; gap:8px; align-self:flex-start; padding:8px 12px; border-radius:9px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33)">
+              <span style="font-size:11px; color:var(--faint,#6b7280)">reset en</span>
+              <span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600; color:var(--text,#e6e9ee)">{{ sevenReset }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- secondary metrics -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px">
+      <div style="padding:16px 18px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:8px">
+        <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint,#6b7280)">Costo sesión</span>
+        <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ costSession }}</span>
+        <span style="font-size:11.5px; color:var(--faint,#6b7280)">sesión activa</span>
+      </div>
+      <div style="padding:16px 18px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:8px">
+        <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint,#6b7280)">Costo del día</span>
+        <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ costToday }}</span>
+        <span style="font-size:11.5px; color:var(--faint,#6b7280)">acumulado hoy</span>
+      </div>
+      <div style="padding:16px 18px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:8px">
+        <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint,#6b7280)">Burn rate</span>
+        <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ burnRate }}<span style="font-size:14px; color:var(--dim,#9aa3af)">/h</span></span>
+        <span style="font-size:11.5px; color:var(--faint,#6b7280)">ritmo de gasto</span>
+      </div>
+      <div style="padding:16px 18px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:8px">
+        <div style="display:flex; align-items:baseline; justify-content:space-between">
+          <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint,#6b7280)">Contexto</span>
+          <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint,#6b7280)">{{ contextTokens }} / {{ contextWindow }}</span>
+        </div>
+        <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ contextPct }}<span style="font-size:14px; color:var(--dim,#9aa3af)">%</span></span>
+        <div style="height:5px; border-radius:3px; background:var(--track,#23272f); overflow:hidden">
+          <div style="height:100%; border-radius:3px; background:{{ contextBarColor }}; width:{{ contextPct }}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- tokens breakdown -->
+    <div style="padding:18px 20px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:14px">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap">
+        <span style="font-size:13px; font-weight:600">Desglose de tokens</span>
+        <span style="font-size:11.5px; color:var(--faint,#6b7280)">total <span style="font-family:'Geist Mono',monospace; color:var(--dim,#9aa3af)">{{ tokTotal }}</span></span>
+      </div>
+      <div style="display:flex; height:14px; border-radius:7px; overflow:hidden; background:var(--track,#23272f); gap:2px">
+        <div style="background:#5b9bff; width:{{ tokInW }}%"></div>
+        <div style="background:#56d364; width:{{ tokOutW }}%"></div>
+        <div style="background:#e3b341; width:{{ tokCcW }}%"></div>
+        <div style="background:#bc8cff; width:{{ tokCrW }}%"></div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px">
+        <div style="display:flex; align-items:center; gap:9px">
+          <span style="width:9px; height:9px; border-radius:2px; background:#5b9bff; flex-shrink:0"></span>
+          <div style="display:flex; flex-direction:column"><span style="font-size:11.5px; color:var(--dim,#9aa3af)">Input</span><span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600">{{ tokIn }}</span></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:9px">
+          <span style="width:9px; height:9px; border-radius:2px; background:#56d364; flex-shrink:0"></span>
+          <div style="display:flex; flex-direction:column"><span style="font-size:11.5px; color:var(--dim,#9aa3af)">Output</span><span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600">{{ tokOut }}</span></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:9px">
+          <span style="width:9px; height:9px; border-radius:2px; background:#e3b341; flex-shrink:0"></span>
+          <div style="display:flex; flex-direction:column"><span style="font-size:11.5px; color:var(--dim,#9aa3af)">Cache creation</span><span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600">{{ tokCc }}</span></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:9px">
+          <span style="width:9px; height:9px; border-radius:2px; background:#bc8cff; flex-shrink:0"></span>
+          <div style="display:flex; flex-direction:column"><span style="font-size:11.5px; color:var(--dim,#9aa3af)">Cache read</span><span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600">{{ tokCr }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- lower: session + recommendations -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px">
+
+      <!-- current session -->
+      <div style="padding:20px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:16px">
+        <div style="display:flex; align-items:center; gap:8px">
+          <span style="font-size:13px; font-weight:600">Sesión actual</span>
+          <span style="width:6px; height:6px; border-radius:50%; background:var(--status,#3fb950)"></span>
+          <span style="font-size:11.5px; color:var(--faint,#6b7280)">activa desde {{ sessionStarted }}</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px">
+          <span style="font-size:16px; font-weight:600; color:var(--text,#e6e9ee)">{{ sessionName }}</span>
+          <span style="font-family:'Geist Mono',monospace; font-size:11.5px; color:var(--faint,#6b7280); word-break:break-all">{{ projectPath }}</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:1px; background:var(--border,#262b33); border:1px solid var(--border,#262b33); border-radius:9px; overflow:hidden">
+          <div style="padding:10px 12px; background:var(--panel,#15181d); display:flex; flex-direction:column; gap:3px">
+            <span style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint,#6b7280)">Rama git</span>
+            <span style="font-family:'Geist Mono',monospace; font-size:13px; font-weight:500">{{ gitBranch }}</span>
+          </div>
+          <div style="padding:10px 12px; background:var(--panel,#15181d); display:flex; flex-direction:column; gap:3px">
+            <span style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint,#6b7280)">Modelo</span>
+            <span style="font-family:'Geist Mono',monospace; font-size:13px; font-weight:500">{{ modelName }}</span>
+          </div>
+          <div style="padding:10px 12px; background:var(--panel,#15181d); display:flex; flex-direction:column; gap:3px">
+            <span style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint,#6b7280)">Esfuerzo</span>
+            <span style="font-family:'Geist Mono',monospace; font-size:13px; font-weight:500; text-transform:capitalize">{{ effortLevel }}</span>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <div style="display:flex; flex-direction:column; gap:5px">
+            <label style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint,#6b7280)">Objetivo</label>
+            <input value="{{ objective }}" onInput="{{ setObjective }}" placeholder="Sin definir — anota el objetivo de la sesión" style="font:inherit; font-size:13px; padding:9px 11px; border-radius:8px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); color:var(--text,#e6e9ee); outline:none" style-focus="border-color:var(--status,#3fb950)" />
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px">
+            <label style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint,#6b7280)">Tipo de tarea</label>
+            <input value="{{ taskType }}" onInput="{{ setTaskType }}" placeholder="Sin definir — p.ej. refactor, debugging, feature" style="font:inherit; font-size:13px; padding:9px 11px; border-radius:8px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); color:var(--text,#e6e9ee); outline:none" style-focus="border-color:var(--status,#3fb950)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- recommendations -->
+      <div style="padding:20px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:14px">
+        <div style="display:flex; align-items:baseline; justify-content:space-between">
+          <span style="font-size:13px; font-weight:600">Recomendaciones</span>
+          <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint,#6b7280)">{{ recCount }}</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <sc-for list="{{ recommendations }}" as="rec" hint-placeholder-count="1">
+            <div style="display:flex; gap:12px; padding:13px 14px; border-radius:10px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); border-left:3px solid {{ rec.color }}">
+              <div style="display:flex; flex-direction:column; gap:4px; flex:1; min-width:0">
+                <div style="display:flex; align-items:center; gap:8px">
+                  <span style="font-size:9.5px; font-weight:700; letter-spacing:0.1em; padding:2px 7px; border-radius:4px; color:{{ rec.color }}; background:{{ rec.tint }}">{{ rec.label }}</span>
+                </div>
+                <span style="font-size:13.5px; font-weight:500; color:var(--text,#e6e9ee); text-wrap:pretty">{{ rec.message }}</span>
+                <span style="font-size:12px; color:var(--dim,#9aa3af); text-wrap:pretty">{{ rec.reason }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:center; padding-top:6px">
+      <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint,#6b7280)">GET /api/dashboard · snapshot {{ snapshotIso }}</span>
+    </div>
+
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:1180}}">
+class Component extends DCLogic {
+  // === Fuente de datos ================================================
+  // Hoy lee un mock local (./dashboard.json) con la MISMA forma que el
+  // contrato real. Para conectar el backend, cambia API_URL por
+  // '/api/dashboard' y (si aplica) ajusta CORS/mismo origen. Nada más.
+  API_URL = 'http://127.0.0.1:8787/api/dashboard';
+  POLL_MS = 10000;
+
+  // Copia embebida del contrato. Solo se usa como respaldo cuando el
+  // fetch no está disponible (p. ej. la vista previa sandbox bloquea la
+  // lectura de archivos locales). Con el backend real, fetch gana y esto
+  // nunca se usa.
+  MOCK = {
+    generated_at: '2026-06-27T13:45:12Z', status: 'green',
+    current_session: {
+      session_name: 'Analizar el propósito del proyecto', project_name: 'proyecto-agentOps',
+      project_path: '/Users/imagemaker/Documents/Proyectos/Personal/proyecto-agentOps',
+      model_name: 'Opus 4.8', git_branch: 'main', effort_level: 'high',
+      task_type: null, objective: null, started_at: '2026-06-27T13:30:00Z',
+    },
+    metrics: {
+      model_name: 'Opus 4.8', cost_session_usd: 0.3655365, cost_today_usd: 1.842, burn_rate_usd_per_hour: 0.42,
+      tokens: { total_input_tokens: 32371, total_output_tokens: 464, cache_creation_input_tokens: 2046, cache_read_input_tokens: 30323 },
+      context: { used_percentage: 3, remaining_percentage: 97, context_window_size: 1000000 },
+      five_hour: { used_percentage: 45, resets_in_human: '3h 14m', data_quality: 'official' },
+      seven_day: { used_percentage: 7, resets_in_human: '5d 17h', data_quality: 'official' },
+    },
+    last_snapshot_at: '2026-06-27T13:45:00Z',
+    recommendations: [{ recommendation_type: 'continue', severity: 'info', message: 'Uso bajo. Continúa trabajando con normalidad.', reason: 'Ventana de 5h al 45%, 7d al 7%.' }],
+  };
+
+  state = {
+    data: null, loading: true, error: null,
+    theme: 'dark', secs: 0,
+    objective: '', taskType: '', annTouched: false,
+  };
+
+  componentDidMount() {
+    let theme = 'dark', ann = {};
+    try {
+      theme = localStorage.getItem('ao_theme') || 'dark';
+      ann = JSON.parse(localStorage.getItem('ao_annotations') || '{}');
+    } catch (e) {}
+    this.setState({
+      theme,
+      objective: ann.objective || '',
+      taskType: ann.taskType || '',
+      annTouched: !!(ann.objective || ann.taskType),
+    });
+    this.fetchData();
+    this._poll = setInterval(() => this.fetchData(), this.POLL_MS);
+    this._tick = setInterval(() => this.setState(s => ({ secs: s.secs + 1 })), 1000);
+  }
+  componentWillUnmount() {
+    if (this._poll) clearInterval(this._poll);
+    if (this._tick) clearInterval(this._tick);
+  }
+
+  async fetchData() {
+    try {
+      const r = await fetch(this.API_URL + '?t=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      this.setState(s => {
+        // Sembrar anotaciones desde el backend solo si el usuario no las ha tocado.
+        const cs = j.current_session || {};
+        const seed = !s.annTouched;
+        return {
+          data: j, error: null, loading: false, secs: 0,
+          objective: seed ? (cs.objective || '') : s.objective,
+          taskType: seed ? (cs.task_type || '') : s.taskType,
+        };
+      });
+    } catch (e) {
+      // Sin backend accesible (o sandbox de vista previa): usar el mock embebido.
+      this.setState(s => {
+        if (s.data) return { error: (e && e.message) || 'No se pudo leer el snapshot' };
+        const j = this.MOCK; const cs = j.current_session || {}; const seed = !s.annTouched;
+        return {
+          data: j, error: null, loading: false, secs: 0, fallback: true,
+          objective: seed ? (cs.objective || '') : s.objective,
+          taskType: seed ? (cs.task_type || '') : s.taskType,
+        };
+      });
+    }
+  }
+
+  saveAnn(objective, taskType) {
+    try { localStorage.setItem('ao_annotations', JSON.stringify({ objective, taskType })); } catch (e) {}
+  }
+
+  fmtTok(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(n >= 10000000 ? 1 : 2) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(n >= 100000 ? 0 : 1) + 'K';
+    return String(n);
+  }
+  fmtUsd(n, d) { return '$' + (Number(n) || 0).toFixed(d); }
+  fmtWindow(n) {
+    if (!n) return '—';
+    if (n % 1000000 === 0) return (n / 1000000) + 'M';
+    return this.fmtTok(n);
+  }
+  hhmm(iso) {
+    if (!iso) return '—';
+    const dt = new Date(iso);
+    if (isNaN(dt)) return '—';
+    const p = (x) => String(x).padStart(2, '0');
+    return p(dt.getUTCHours()) + ':' + p(dt.getUTCMinutes());
+  }
+  ago(s) {
+    if (s < 60) return s + 's';
+    const m = Math.floor(s / 60); const r = s % 60;
+    return m + 'm ' + r + 's';
+  }
+
+  renderVals() {
+    const S = this.state;
+    const j = S.data;
+
+    // Conexión / frescura
+    let conn;
+    if (S.loading && !j) conn = { color: '#8a919c', label: 'Conectando…', pulse: true };
+    else if (S.error) conn = { color: '#f85149', label: 'Sin conexión — reintentando', pulse: true };
+    else if (S.fallback) conn = { color: '#8a919c', label: 'Mock embebido (sin backend)', pulse: false };
+    else if (S.secs >= 30) conn = { color: '#d8a01a', label: 'Datos antiguos', pulse: false };
+    else conn = { color: '#3fb950', label: 'En vivo', pulse: false };
+
+    // Normalizar el payload del contrato a un objeto plano `d`
+    const status = (j && j.status) || 'green';
+    let d;
+    if (j) {
+      const m = j.metrics || {};
+      const cs = j.current_session || {};
+      const tk = m.tokens || {};
+      const fh = m.five_hour || {}; const sd = m.seven_day || {}; const ctx = m.context || {};
+      d = {
+        five: { used: fh.used_percentage ?? 0, reset: fh.resets_in_human || '—', quality: fh.data_quality || 'official' },
+        seven: { used: sd.used_percentage ?? 0, reset: sd.resets_in_human || '—', quality: sd.data_quality || 'official' },
+        cost_session: m.cost_session_usd ?? 0,
+        cost_today: m.cost_today_usd ?? 0,
+        burn: m.burn_rate_usd_per_hour ?? 0,
+        context: ctx.used_percentage ?? 0,
+        contextWindow: ctx.context_window_size ?? 1000000,
+        tok: {
+          in: tk.total_input_tokens ?? 0, out: tk.total_output_tokens ?? 0,
+          cc: tk.cache_creation_input_tokens ?? 0, cr: tk.cache_read_input_tokens ?? 0,
+        },
+        recs: (j.recommendations || []).map(r => ({ type: r.severity || 'info', message: r.message || '', reason: r.reason || '' })),
+        session: {
+          name: cs.session_name || '—', project: cs.project_name || '—', path: cs.project_path || '—',
+          model: cs.model_name || m.model_name || '—', branch: cs.git_branch || '—',
+          effort: cs.effort_level || '—', started: this.hhmm(cs.started_at),
+        },
+        snapshotIso: j.generated_at || j.last_snapshot_at || '',
+      };
+    } else {
+      d = {
+        five: { used: 0, reset: '—', quality: 'official' }, seven: { used: 0, reset: '—', quality: 'official' },
+        cost_session: 0, cost_today: 0, burn: 0, context: 0, contextWindow: 1000000,
+        tok: { in: 0, out: 0, cc: 0, cr: 0 }, recs: [],
+        session: { name: '—', project: '—', path: '—', model: '—', branch: '—', effort: '—', started: '—' },
+        snapshotIso: '',
+      };
+    }
+
+    const themes = {
+      dark: { bg: '#0e1013', panel: '#15181d', panel2: '#1b1f26', border: '#262b33', track: '#23272f', text: '#e6e9ee', dim: '#9aa3af', faint: '#6b7280', input: '#0b0d10' },
+      light: { bg: '#f4f5f7', panel: '#ffffff', panel2: '#eceef1', border: '#e0e3e8', track: '#e6e9ed', text: '#1a1d22', dim: '#5b626d', faint: '#98a0ab', input: '#ffffff' },
+    };
+    const statusColors = { green: '#3fb950', yellow: '#d8a01a', red: '#f85149', critical: '#ff453a' };
+    const statusLabels = { green: 'Estado: Normal', yellow: 'Estado: Advertencia', red: 'Estado: Alto', critical: 'Estado: Crítico' };
+    const sevColors = { info: '#5b9bff', warning: '#d8a01a', critical: '#f85149' };
+    const sevLabels = { info: 'INFO', warning: 'ADVERTENCIA', critical: 'CRÍTICO' };
+    const sevTint = { info: 'rgba(91,155,255,0.14)', warning: 'rgba(216,160,26,0.16)', critical: 'rgba(248,81,73,0.16)' };
+
+    const t = themes[S.theme];
+    const sc = statusColors[status] || statusColors.green;
+    const tintMap = { green: 'rgba(63,185,80,0.13)', yellow: 'rgba(216,160,26,0.15)', red: 'rgba(248,81,73,0.15)', critical: 'rgba(255,69,58,0.16)' };
+    const stTint = tintMap[status] || tintMap.green;
+
+    const rootStyle = `--bg:${t.bg};--panel:${t.panel};--panel2:${t.panel2};--border:${t.border};--track:${t.track};--text:${t.text};--dim:${t.dim};--faint:${t.faint};--input:${t.input};--status:${sc};--status-tint:${stTint}`;
+
+    const qLabel = (q) => q === 'official' ? 'OFICIAL' : 'ESTIMADO';
+    const qColor = (q) => q === 'official' ? 'var(--dim,#9aa3af)' : '#d8a01a';
+
+    const C = 2 * Math.PI * 78;
+    const fiveOffset = C * (1 - d.five.used / 100);
+    const sevenOffset = C * (1 - d.seven.used / 100);
+
+    // tokens
+    const tk = d.tok;
+    const tkTotal = tk.in + tk.out + tk.cc + tk.cr;
+    const w = (n) => (tkTotal ? (n / tkTotal * 100) : 0);
+
+    const recommendations = d.recs.map(r => ({
+      message: r.message, reason: r.reason,
+      color: sevColors[r.type] || sevColors.info, label: sevLabels[r.type] || 'INFO', tint: sevTint[r.type] || sevTint.info,
+    }));
+
+    const showBanner = (status === 'red' || status === 'critical');
+    const top = d.recs[0] || { message: '', reason: '' };
+    const bannerStyle = `display:flex; align-items:flex-start; gap:14px; padding:14px 18px; border-radius:12px; background:var(--status-tint,${stTint}); border:1px solid ${sc}; ${status === 'critical' ? 'animation:ao-pulse 1.8s ease-in-out infinite;' : ''}`;
+
+    const contextBar = d.context >= 85 ? '#f85149' : d.context >= 60 ? '#d8a01a' : '#5b9bff';
+    const usedCtxTokens = Math.round(d.contextWindow * d.context / 100);
+
+    const setObjective = (e) => { const v = e.target.value; this.setState({ objective: v, annTouched: true }); this.saveAnn(v, this.state.taskType); };
+    const setTaskType = (e) => { const v = e.target.value; this.setState({ taskType: v, annTouched: true }); this.saveAnn(this.state.objective, v); };
+
+    return {
+      rootStyle,
+      // connection bar
+      connColor: conn.color,
+      connLabel: conn.label,
+      connPulse: conn.pulse ? 'animation:ao-blink 1.2s ease-in-out infinite' : '',
+      snapAgo: (S.loading && !j) ? '—' : this.ago(S.secs),
+      refresh: () => this.fetchData(),
+      toggleTheme: () => this.setState(s => { const nt = s.theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('ao_theme', nt); } catch (e) {} return { theme: nt }; }),
+      themeLabel: S.theme === 'dark' ? 'Oscuro' : 'Claro',
+      themeGlyph: S.theme === 'dark' ? '◐' : '○',
+      // header
+      projectName: d.session.project,
+      modelName: d.session.model,
+      statusColor: sc,
+      statusLabel: statusLabels[status] || 'Estado: —',
+      snapshotIso: d.snapshotIso || '—',
+      // banner
+      showBanner,
+      bannerStyle,
+      bannerTag: status === 'critical' ? 'CRÍTICO' : 'AVISO',
+      bannerText: top.message,
+      bannerReason: top.reason,
+      // rings
+      ringC: C,
+      fiveUsed: d.five.used, fiveRemaining: 100 - d.five.used, fiveOffset, fiveReset: d.five.reset,
+      sevenUsed: d.seven.used, sevenRemaining: 100 - d.seven.used, sevenOffset, sevenReset: d.seven.reset,
+      fiveQualityLabel: qLabel(d.five.quality), fiveQualityColor: qColor(d.five.quality),
+      sevenQualityLabel: qLabel(d.seven.quality), sevenQualityColor: qColor(d.seven.quality),
+      // metrics
+      costSession: this.fmtUsd(d.cost_session, 3),
+      costToday: this.fmtUsd(d.cost_today, 2),
+      burnRate: this.fmtUsd(d.burn, 2),
+      contextPct: d.context,
+      contextTokens: this.fmtTok(usedCtxTokens),
+      contextWindow: this.fmtWindow(d.contextWindow),
+      contextBarColor: contextBar,
+      // tokens
+      tokTotal: this.fmtTok(tkTotal),
+      tokIn: this.fmtTok(tk.in), tokOut: this.fmtTok(tk.out), tokCc: this.fmtTok(tk.cc), tokCr: this.fmtTok(tk.cr),
+      tokInW: w(tk.in), tokOutW: w(tk.out), tokCcW: w(tk.cc), tokCrW: w(tk.cr),
+      // session
+      sessionName: d.session.name,
+      projectPath: d.session.path,
+      gitBranch: d.session.branch,
+      effortLevel: d.session.effort,
+      sessionStarted: d.session.started,
+      objective: S.objective || '', taskType: S.taskType || '',
+      setObjective, setTaskType,
+      // recs
+      recommendations,
+      recCount: d.recs.length,
+    };
+  }
+}
+</script>
+</body>
+</html>

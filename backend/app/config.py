@@ -31,7 +31,12 @@ class Settings(BaseSettings):
 
     reconcile_interval_seconds: int = 300
     scheduler_enabled: bool = True  # tests/CI pueden apagarlo (AGENTOPS_SCHEDULER_ENABLED=false)
-    frontend_dist: str = "../frontend/dist"
+    frontend_dist: str = "../frontend/public"  # deliverable estático servido en /
+
+    # CORS SOLO para desarrollo: cuando el dashboard se abre desde otro origen
+    # (archivo local o Vite dev). En operación normal el backend sirve el SPA en
+    # el mismo origen y CORS queda apagado (ver CLAUDE.md).
+    dev_cors: bool = False
 
 
 settings = Settings()

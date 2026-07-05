@@ -10,6 +10,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
@@ -34,6 +35,16 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Local AgentOps", version="0.1.0", lifespan=lifespan)
+
+# CORS solo en desarrollo (dashboard abierto desde otro origen). En producción el
+# backend sirve el SPA en el mismo origen y esto queda apagado (AGENTOPS_DEV_CORS=false).
+if settings.dev_cors:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["GET"],
+        allow_headers=["*"],
+    )
 
 app.include_router(snapshots.router)
 app.include_router(dashboard.router)
