@@ -59,8 +59,12 @@ def _window(
 
 def build_dashboard(session: Session) -> dict[str, Any]:
     now = datetime.now(UTC)
+    # Debería haber una sola jornada activa (get_or_create_workday cierra las
+    # viejas); ante datos heredados con varias activas, prefiere la más reciente.
     workday = session.exec(
-        select(Workday).where(Workday.status == "active")
+        select(Workday)
+        .where(Workday.status == "active")
+        .order_by(Workday.date.desc())  # type: ignore[attr-defined]
     ).first()
     # Feed oficial en vivo: el último snapshot del statusline. Los ticks de ccusage
     # (reconciliación, sin rate_limits) no deben degradar status ni ventanas.

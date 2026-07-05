@@ -26,6 +26,18 @@ def get_or_create_workday(session: Session) -> Workday:
     date = _today_local()
     workday = session.exec(select(Workday).where(Workday.date == date)).first()
     if workday is None:
+        # Al abrir una jornada nueva, cierra cualquier jornada activa de días
+        # previos: solo debe existir UNA jornada activa (la de hoy). Si no, el
+        # dashboard —que toma la primera activa— quedaría anclado a un día viejo.
+        stale = session.exec(
+            select(Workday)
+            .where(Workday.status == "active")
+            .where(Workday.date != date)
+        ).all()
+        for w in stale:
+            w.status = "closed"
+            w.ended_at = datetime.now(UTC)
+            session.add(w)
         workday = Workday(date=date, status="active")
         session.add(workday)
         session.flush()  # asegura id antes de usarlo
