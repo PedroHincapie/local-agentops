@@ -17,31 +17,132 @@
   input::placeholder, textarea::placeholder{ color:var(--faint,#6b7280); opacity:1; }
   @keyframes ao-pulse{ 0%,100%{ box-shadow:0 0 0 0 var(--status,#f85149); opacity:1; } 50%{ box-shadow:0 0 18px 1px var(--status,#f85149); opacity:.88; } }
   @keyframes ao-blink{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+
+  .transition-theme {
+    transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .dashboard-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.25s ease;
+  }
+
+  .dashboard-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--border) 60%, var(--text));
+    box-shadow: var(--shadow), 0 12px 30px -4px rgba(0,0,0,0.15);
+  }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 12px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--dim);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  }
+
+  .btn-action:hover {
+    background: var(--panel2);
+    border-color: var(--dim);
+    color: var(--text);
+  }
+
+  .btn-action:active {
+    transform: scale(0.97);
+  }
+
+  .input-field {
+    font: inherit;
+    font-size: 13px;
+    padding: 9px 11px;
+    border-radius: 8px;
+    background: var(--input);
+    border: 1px solid var(--border);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.25s ease;
+  }
+
+  .input-field:focus {
+    border-color: var(--status);
+    box-shadow: 0 0 0 2px var(--status-tint);
+  }
+
+  .token-segment {
+    transition: opacity 0.2s ease, filter 0.2s ease;
+    cursor: pointer;
+  }
+
+  .token-bar:hover .token-segment {
+    opacity: 0.45;
+  }
+
+  .token-bar .token-segment:hover {
+    opacity: 1 !important;
+    filter: brightness(1.15);
+  }
 </style>
 </helmet>
 <div style="{{ rootStyle }}">
-<div style="min-height:100vh; padding:22px 26px 60px; font-family:'Geist',system-ui,sans-serif; letter-spacing:-0.01em; background:var(--bg,#0e1013); color:var(--text,#e6e9ee)" data-screen-label="AgentOps Dashboard">
+<div class="transition-theme" style="min-height:100vh; padding:22px 26px 60px; font-family:'Geist',system-ui,sans-serif; letter-spacing:-0.01em; background: radial-gradient(circle at top right, var(--bg-glow), transparent 45%), radial-gradient(circle at bottom left, var(--bg-glow), transparent 45%), var(--bg); color:var(--text)" data-screen-label="AgentOps Dashboard">
+  
+  <svg style="position: absolute; width: 0; height: 0;">
+    <defs>
+      <linearGradient id="grad-green" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#2ea043" />
+        <stop offset="100%" stop-color="#56d364" />
+      </linearGradient>
+      <linearGradient id="grad-yellow" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#d29922" />
+        <stop offset="100%" stop-color="#e3b341" />
+      </linearGradient>
+      <linearGradient id="grad-red" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#da3633" />
+        <stop offset="100%" stop-color="#f85149" />
+      </linearGradient>
+      <linearGradient id="grad-critical" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#cf222e" />
+        <stop offset="100%" stop-color="#ff6b6b" />
+      </linearGradient>
+    </defs>
+  </svg>
+
   <div style="margin: 0 auto; max-width:1240px; display:flex; flex-direction:column; gap:18px">
 
     <!-- connection bar -->
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; padding:9px 14px; border:1px solid var(--border,#262b33); border-radius:10px; background:var(--panel2,#1b1f26)">
+    <div class="transition-theme" style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; padding:9px 14px; border:1px solid var(--border); border-radius:10px; background:var(--panel2)">
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
-        <span style="display:inline-flex; align-items:center; gap:7px; padding:4px 9px; border-radius:6px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); font-family:'Geist Mono',monospace; font-size:11px; color:var(--dim,#9aa3af)">
+        <span class="transition-theme" style="display:inline-flex; align-items:center; gap:7px; padding:4px 9px; border-radius:6px; background:var(--input); border:1px solid var(--border); font-family:'Geist Mono',monospace; font-size:11px; color:var(--dim)">
           <span style="color:#56d364; font-weight:600">GET</span> /api/dashboard
         </span>
-        <span style="display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--dim,#9aa3af)">
+        <span style="display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--dim)">
           <span style="width:8px; height:8px; border-radius:50%; background:{{ connColor }}; {{ connPulse }}"></span>
-          <span style="font-weight:600; color:var(--text,#e6e9ee)">{{ connLabel }}</span>
-          <span style="color:var(--faint,#6b7280)">· actualizado hace</span>
-          <span style="font-family:'Geist Mono',monospace; color:var(--dim,#9aa3af)">{{ snapAgo }}</span>
+          <span style="font-weight:600; color:var(--text)">{{ connLabel }}</span>
+          <span style="color:var(--faint)">· actualizado hace</span>
+          <span style="font-family:'Geist Mono',monospace; color:var(--dim)">{{ snapAgo }}</span>
         </span>
-        <span style="font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; padding:2px 7px; border-radius:4px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); color:var(--faint,#6b7280)">mock local</span>
+        <sc-if value="{{ showMockBadge }}" hint-placeholder-val="{{ false }}">
+          <span class="transition-theme" style="font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; padding:2px 7px; border-radius:4px; background:var(--input); border:1px solid var(--border); color:var(--faint)">mock local</span>
+        </sc-if>
       </div>
       <div style="display:flex; align-items:center; gap:8px">
-        <button onClick="{{ refresh }}" style="display:inline-flex; align-items:center; gap:7px; padding:7px 12px; font:inherit; font-size:12px; font-weight:500; color:var(--dim,#9aa3af); background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); border-radius:8px; cursor:pointer">
+        <button onClick="{{ refresh }}" class="btn-action transition-theme">
           <span style="font-size:13px">↻</span><span>Refrescar</span>
         </button>
-        <button onClick="{{ toggleTheme }}" style="display:inline-flex; align-items:center; gap:7px; padding:7px 12px; font:inherit; font-size:12px; font-weight:500; color:var(--dim,#9aa3af); background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); border-radius:8px; cursor:pointer">
+        <button onClick="{{ toggleTheme }}" class="btn-action transition-theme">
           <span style="font-size:13px">{{ themeGlyph }}</span><span>{{ themeLabel }}</span>
         </button>
       </div>
@@ -51,21 +152,21 @@
     <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap">
       <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap">
         <div style="display:flex; align-items:center; gap:9px">
-          <div style="width:26px; height:26px; border-radius:7px; background:var(--status,#3fb950); display:flex; align-items:center; justify-content:center; color:#0b0d10; font-weight:700; font-size:13px; font-family:'Geist Mono',monospace">A</div>
+          <div style="width:26px; height:26px; border-radius:7px; background:var(--status); display:flex; align-items:center; justify-content:center; color:#0b0d10; font-weight:700; font-size:13px; font-family:'Geist Mono',monospace">A</div>
           <div style="display:flex; flex-direction:column; line-height:1.15">
             <span style="font-size:15px; font-weight:600">{{ projectName }}</span>
-            <span style="font-size:11.5px; color:var(--faint,#6b7280)">Local AgentOps · Claude Code</span>
+            <span style="font-size:11.5px; color:var(--faint)">Local AgentOps · Claude Code</span>
           </div>
         </div>
-        <div style="height:22px; width:1px; background:var(--border,#262b33)"></div>
-        <span style="display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:7px; background:var(--panel2,#1b1f26); border:1px solid var(--border,#262b33); font-size:12px; color:var(--dim,#9aa3af); white-space:nowrap">
-          <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint,#6b7280)">model</span>
-          <span style="font-weight:600; color:var(--text,#e6e9ee); font-family:'Geist Mono',monospace">{{ modelName }}</span>
+        <div class="transition-theme" style="height:22px; width:1px; background:var(--border)"></div>
+        <span class="transition-theme" style="display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:7px; background:var(--panel2); border:1px solid var(--border); font-size:12px; color:var(--dim); white-space:nowrap">
+          <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint)">model</span>
+          <span style="font-weight:600; color:var(--text); font-family:'Geist Mono',monospace">{{ modelName }}</span>
         </span>
       </div>
       <div style="display:flex; align-items:center; gap:12px">
-        <span style="display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:8px; font-size:12.5px; font-weight:600; color:var(--status,#3fb950); background:var(--status-tint,rgba(63,185,80,0.12)); border:1px solid var(--status,#3fb950); white-space:nowrap">
-          <span style="width:8px; height:8px; border-radius:50%; background:var(--status,#3fb950)"></span>
+        <span class="transition-theme" style="display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:8px; font-size:12.5px; font-weight:600; color:var(--status); background:var(--status-tint); border:1px solid var(--status); white-space:nowrap">
+          <span style="width:8px; height:8px; border-radius:50%; background:var(--status)"></span>
           {{ statusLabel }}
         </span>
       </div>
@@ -74,10 +175,10 @@
     <!-- banner -->
     <sc-if value="{{ showBanner }}" hint-placeholder-val="{{ false }}">
       <div style="{{ bannerStyle }}">
-        <span style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; padding:3px 8px; border-radius:5px; background:var(--status,#f85149); color:#0b0d10; flex-shrink:0">{{ bannerTag }}</span>
+        <span style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; padding:3px 8px; border-radius:5px; background:var(--status); color:#0b0d10; flex-shrink:0">{{ bannerTag }}</span>
         <div style="display:flex; flex-direction:column; gap:4px">
-          <span style="font-size:13.5px; font-weight:600; color:var(--text,#e6e9ee)">{{ bannerText }}</span>
-          <span style="font-size:12px; color:var(--dim,#9aa3af)">{{ bannerReason }}</span>
+          <span style="font-size:13.5px; font-weight:600; color:var(--text)">{{ bannerText }}</span>
+          <span style="font-size:12px; color:var(--dim)">{{ bannerReason }}</span>
         </div>
       </div>
     </sc-if>
@@ -85,63 +186,63 @@
     <!-- HERO: official limit windows -->
     <div style="display:flex; flex-direction:column; gap:9px">
       <div style="display:flex; align-items:baseline; gap:9px">
-        <span style="font-size:12px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--dim,#9aa3af); white-space:nowrap">Margen operativo</span>
-        <span style="font-size:11.5px; color:var(--faint,#6b7280)">ventanas de límite oficiales</span>
+        <span style="font-size:12px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--dim); white-space:nowrap">Margen operativo</span>
+        <span style="font-size:11.5px; color:var(--faint)">ventanas de límite oficiales</span>
       </div>
       <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px">
 
         <!-- 5h -->
-        <div style="position:relative; padding:24px; border-radius:14px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; align-items:center; gap:24px">
+        <div class="dashboard-card transition-theme" style="position:relative; padding:24px; display:flex; align-items:center; gap:24px">
           <div style="position:relative; width:176px; height:176px; flex-shrink:0">
             <svg width="176" height="176" viewBox="0 0 180 180" style="transform:rotate(-90deg)">
-              <circle cx="90" cy="90" r="78" fill="none" stroke="var(--track,#23272f)" strokeWidth="13"></circle>
-              <circle cx="90" cy="90" r="78" fill="none" stroke="{{ statusColor }}" strokeWidth="13" strokeLinecap="round" strokeDasharray="{{ ringC }}" strokeDashoffset="{{ fiveOffset }}"></circle>
+              <circle cx="90" cy="90" r="78" fill="none" stroke="var(--track)" strokeWidth="13"></circle>
+              <circle cx="90" cy="90" r="78" fill="none" stroke="{{ fiveStroke }}" strokeWidth="13" strokeLinecap="round" strokeDasharray="{{ ringC }}" strokeDashoffset="{{ fiveOffset }}" style="transition: stroke-dashoffset 0.4s ease;"></circle>
             </svg>
             <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px">
-              <span style="font-family:'Geist Mono',monospace; font-size:42px; font-weight:600; line-height:1; color:var(--text,#e6e9ee)">{{ fiveUsed }}<span style="font-size:20px; color:var(--dim,#9aa3af)">%</span></span>
-              <span style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--faint,#6b7280)">usado</span>
+              <span style="font-family:'Geist Mono',monospace; font-size:42px; font-weight:600; line-height:1; color:var(--text)">{{ fiveUsed }}<span style="font-size:20px; color:var(--dim)">%</span></span>
+              <span style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--faint)">usado</span>
             </div>
           </div>
           <div style="display:flex; flex-direction:column; gap:13px; flex:1; min-width:0">
             <div style="display:flex; align-items:center; gap:8px">
               <span style="font-size:16px; font-weight:600">Ventana de 5 horas</span>
-              <span style="font-size:9.5px; font-weight:700; letter-spacing:0.1em; padding:3px 7px; border-radius:5px; background:var(--panel2,#1b1f26); border:1px solid var(--border,#262b33); color:{{ fiveQualityColor }}">{{ fiveQualityLabel }}</span>
+              <span class="transition-theme" style="font-size:9.5px; font-weight:700; letter-spacing:0.1em; padding:3px 7px; border-radius:5px; background:var(--panel2); border:1px solid var(--border); color:{{ fiveQualityColor }}">{{ fiveQualityLabel }}</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:3px">
-              <span style="font-size:11.5px; color:var(--faint,#6b7280)">queda disponible</span>
-              <span style="font-family:'Geist Mono',monospace; font-size:22px; font-weight:600; color:{{ statusColor }}">{{ fiveRemaining }}%</span>
+              <span style="font-size:11.5px; color:var(--faint)">queda disponible</span>
+              <span style="font-family:'Geist Mono',monospace; font-size:22px; font-weight:600; color:{{ fiveColor }}">{{ fiveRemaining }}%</span>
             </div>
-            <div style="display:inline-flex; align-items:center; gap:8px; align-self:flex-start; padding:8px 12px; border-radius:9px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33)">
-              <span style="font-size:11px; color:var(--faint,#6b7280)">reset en</span>
-              <span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600; color:var(--text,#e6e9ee)">{{ fiveReset }}</span>
+            <div class="transition-theme" style="display:inline-flex; align-items:center; gap:8px; align-self:flex-start; padding:8px 12px; border-radius:9px; background:var(--input); border:1px solid var(--border)">
+              <span style="font-size:11px; color:var(--faint)">reset en</span>
+              <span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600; color:var(--text)">{{ fiveReset }}</span>
             </div>
           </div>
         </div>
 
         <!-- 7d -->
-        <div style="position:relative; padding:24px; border-radius:14px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; align-items:center; gap:24px">
+        <div class="dashboard-card transition-theme" style="position:relative; padding:24px; display:flex; align-items:center; gap:24px">
           <div style="position:relative; width:176px; height:176px; flex-shrink:0">
             <svg width="176" height="176" viewBox="0 0 180 180" style="transform:rotate(-90deg)">
-              <circle cx="90" cy="90" r="78" fill="none" stroke="var(--track,#23272f)" strokeWidth="13"></circle>
-              <circle cx="90" cy="90" r="78" fill="none" stroke="{{ statusColor }}" strokeWidth="13" strokeLinecap="round" strokeDasharray="{{ ringC }}" strokeDashoffset="{{ sevenOffset }}"></circle>
+              <circle cx="90" cy="90" r="78" fill="none" stroke="var(--track)" strokeWidth="13"></circle>
+              <circle cx="90" cy="90" r="78" fill="none" stroke="{{ sevenStroke }}" strokeWidth="13" strokeLinecap="round" strokeDasharray="{{ ringC }}" strokeDashoffset="{{ sevenOffset }}" style="transition: stroke-dashoffset 0.4s ease;"></circle>
             </svg>
             <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px">
-              <span style="font-family:'Geist Mono',monospace; font-size:42px; font-weight:600; line-height:1; color:var(--text,#e6e9ee)">{{ sevenUsed }}<span style="font-size:20px; color:var(--dim,#9aa3af)">%</span></span>
-              <span style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--faint,#6b7280)">usado</span>
+              <span style="font-family:'Geist Mono',monospace; font-size:42px; font-weight:600; line-height:1; color:var(--text)">{{ sevenUsed }}<span style="font-size:20px; color:var(--dim)">%</span></span>
+              <span style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--faint)">usado</span>
             </div>
           </div>
           <div style="display:flex; flex-direction:column; gap:13px; flex:1; min-width:0">
             <div style="display:flex; align-items:center; gap:8px">
               <span style="font-size:16px; font-weight:600">Ventana de 7 días</span>
-              <span style="font-size:9.5px; font-weight:700; letter-spacing:0.1em; padding:3px 7px; border-radius:5px; background:var(--panel2,#1b1f26); border:1px solid var(--border,#262b33); color:{{ sevenQualityColor }}">{{ sevenQualityLabel }}</span>
+              <span class="transition-theme" style="font-size:9.5px; font-weight:700; letter-spacing:0.1em; padding:3px 7px; border-radius:5px; background:var(--panel2); border:1px solid var(--border); color:{{ sevenQualityColor }}">{{ sevenQualityLabel }}</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:3px">
-              <span style="font-size:11.5px; color:var(--faint,#6b7280)">queda disponible</span>
-              <span style="font-family:'Geist Mono',monospace; font-size:22px; font-weight:600; color:{{ statusColor }}">{{ sevenRemaining }}%</span>
+              <span style="font-size:11.5px; color:var(--faint)">queda disponible</span>
+              <span style="font-family:'Geist Mono',monospace; font-size:22px; font-weight:600; color:{{ sevenColor }}">{{ sevenRemaining }}%</span>
             </div>
-            <div style="display:inline-flex; align-items:center; gap:8px; align-self:flex-start; padding:8px 12px; border-radius:9px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33)">
-              <span style="font-size:11px; color:var(--faint,#6b7280)">reset en</span>
-              <span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600; color:var(--text,#e6e9ee)">{{ sevenReset }}</span>
+            <div class="transition-theme" style="display:inline-flex; align-items:center; gap:8px; align-self:flex-start; padding:8px 12px; border-radius:9px; background:var(--input); border:1px solid var(--border)">
+              <span style="font-size:11px; color:var(--faint)">reset en</span>
+              <span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600; color:var(--text)">{{ sevenReset }}</span>
             </div>
           </div>
         </div>
@@ -150,61 +251,61 @@
 
     <!-- secondary metrics -->
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px">
-      <div style="padding:16px 18px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:8px">
-        <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint,#6b7280)">Costo sesión</span>
+      <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:8px">
+        <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint)">Costo sesión</span>
         <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ costSession }}</span>
-        <span style="font-size:11.5px; color:var(--faint,#6b7280)">sesión activa</span>
+        <span style="font-size:11.5px; color:var(--faint)">sesión activa</span>
       </div>
-      <div style="padding:16px 18px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:8px">
-        <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint,#6b7280)">Costo del día</span>
+      <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:8px">
+        <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint)">Costo del día</span>
         <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ costToday }}</span>
-        <span style="font-size:11.5px; color:var(--faint,#6b7280)">acumulado hoy</span>
+        <span style="font-size:11.5px; color:var(--faint)">acumulado hoy</span>
       </div>
-      <div style="padding:16px 18px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:8px">
-        <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint,#6b7280)">Burn rate</span>
-        <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ burnRate }}<span style="font-size:14px; color:var(--dim,#9aa3af)">/h</span></span>
-        <span style="font-size:11.5px; color:var(--faint,#6b7280)">ritmo de gasto</span>
+      <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:8px">
+        <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint)">Burn rate</span>
+        <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ burnRate }}<span style="font-size:14px; color:var(--dim)">/h</span></span>
+        <span style="font-size:11.5px; color:var(--faint)">ritmo de gasto</span>
       </div>
-      <div style="padding:16px 18px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:8px">
+      <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:8px">
         <div style="display:flex; align-items:baseline; justify-content:space-between">
-          <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint,#6b7280)">Contexto</span>
-          <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint,#6b7280)">{{ contextTokens }} / {{ contextWindow }}</span>
+          <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint)">Contexto</span>
+          <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint)">{{ contextTokens }} / {{ contextWindow }}</span>
         </div>
-        <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ contextPct }}<span style="font-size:14px; color:var(--dim,#9aa3af)">%</span></span>
-        <div style="height:5px; border-radius:3px; background:var(--track,#23272f); overflow:hidden">
+        <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ contextPct }}<span style="font-size:14px; color:var(--dim)">%</span></span>
+        <div style="height:5px; border-radius:3px; background:var(--track); overflow:hidden">
           <div style="height:100%; border-radius:3px; background:{{ contextBarColor }}; width:{{ contextPct }}%"></div>
         </div>
       </div>
     </div>
 
     <!-- tokens breakdown -->
-    <div style="padding:18px 20px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:14px">
+    <div class="dashboard-card transition-theme" style="padding:18px 20px; display:flex; flex-direction:column; gap:14px">
       <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap">
         <span style="font-size:13px; font-weight:600">Desglose de tokens</span>
-        <span style="font-size:11.5px; color:var(--faint,#6b7280)">total <span style="font-family:'Geist Mono',monospace; color:var(--dim,#9aa3af)">{{ tokTotal }}</span></span>
+        <span style="font-size:11.5px; color:var(--faint)">total <span style="font-family:'Geist Mono',monospace; color:var(--dim)">{{ tokTotal }}</span></span>
       </div>
-      <div style="display:flex; height:14px; border-radius:7px; overflow:hidden; background:var(--track,#23272f); gap:2px">
-        <div style="background:#5b9bff; width:{{ tokInW }}%"></div>
-        <div style="background:#56d364; width:{{ tokOutW }}%"></div>
-        <div style="background:#e3b341; width:{{ tokCcW }}%"></div>
-        <div style="background:#bc8cff; width:{{ tokCrW }}%"></div>
+      <div class="token-bar" style="display:flex; height:14px; border-radius:7px; overflow:hidden; background:var(--track); gap:2px">
+        <div class="token-segment" style="background:#5b9bff; width:{{ tokInW }}%; transition: width 0.3s ease;"></div>
+        <div class="token-segment" style="background:#56d364; width:{{ tokOutW }}%; transition: width 0.3s ease;"></div>
+        <div class="token-segment" style="background:#e3b341; width:{{ tokCcW }}%; transition: width 0.3s ease;"></div>
+        <div class="token-segment" style="background:#bc8cff; width:{{ tokCrW }}%; transition: width 0.3s ease;"></div>
       </div>
       <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px">
         <div style="display:flex; align-items:center; gap:9px">
           <span style="width:9px; height:9px; border-radius:2px; background:#5b9bff; flex-shrink:0"></span>
-          <div style="display:flex; flex-direction:column"><span style="font-size:11.5px; color:var(--dim,#9aa3af)">Input</span><span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600">{{ tokIn }}</span></div>
+          <div style="display:flex; flex-direction:column"><span style="font-size:11.5px; color:var(--dim)">Input</span><span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600">{{ tokIn }}</span></div>
         </div>
         <div style="display:flex; align-items:center; gap:9px">
           <span style="width:9px; height:9px; border-radius:2px; background:#56d364; flex-shrink:0"></span>
-          <div style="display:flex; flex-direction:column"><span style="font-size:11.5px; color:var(--dim,#9aa3af)">Output</span><span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600">{{ tokOut }}</span></div>
+          <div style="display:flex; flex-direction:column"><span style="font-size:11.5px; color:var(--dim)">Output</span><span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600">{{ tokOut }}</span></div>
         </div>
         <div style="display:flex; align-items:center; gap:9px">
           <span style="width:9px; height:9px; border-radius:2px; background:#e3b341; flex-shrink:0"></span>
-          <div style="display:flex; flex-direction:column"><span style="font-size:11.5px; color:var(--dim,#9aa3af)">Cache creation</span><span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600">{{ tokCc }}</span></div>
+          <div style="display:flex; flex-direction:column"><span style="font-size:11.5px; color:var(--dim)">Cache creation</span><span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600">{{ tokCc }}</span></div>
         </div>
         <div style="display:flex; align-items:center; gap:9px">
           <span style="width:9px; height:9px; border-radius:2px; background:#bc8cff; flex-shrink:0"></span>
-          <div style="display:flex; flex-direction:column"><span style="font-size:11.5px; color:var(--dim,#9aa3af)">Cache read</span><span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600">{{ tokCr }}</span></div>
+          <div style="display:flex; flex-direction:column"><span style="font-size:11.5px; color:var(--dim)">Cache read</span><span style="font-family:'Geist Mono',monospace; font-size:14px; font-weight:600">{{ tokCr }}</span></div>
         </div>
       </div>
     </div>
@@ -213,57 +314,57 @@
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px">
 
       <!-- current session -->
-      <div style="padding:20px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:16px">
+      <div class="dashboard-card transition-theme" style="padding:20px; display:flex; flex-direction:column; gap:16px">
         <div style="display:flex; align-items:center; gap:8px">
           <span style="font-size:13px; font-weight:600">Sesión actual</span>
-          <span style="width:6px; height:6px; border-radius:50%; background:var(--status,#3fb950)"></span>
-          <span style="font-size:11.5px; color:var(--faint,#6b7280)">activa desde {{ sessionStarted }}</span>
+          <span style="width:6px; height:6px; border-radius:50%; background:var(--status)"></span>
+          <span style="font-size:11.5px; color:var(--faint)">activa desde {{ sessionStarted }}</span>
         </div>
         <div style="display:flex; flex-direction:column; gap:4px">
-          <span style="font-size:16px; font-weight:600; color:var(--text,#e6e9ee)">{{ sessionName }}</span>
-          <span style="font-family:'Geist Mono',monospace; font-size:11.5px; color:var(--faint,#6b7280); word-break:break-all">{{ projectPath }}</span>
+          <span style="font-size:16px; font-weight:600; color:var(--text)">{{ sessionName }}</span>
+          <span style="font-family:'Geist Mono',monospace; font-size:11.5px; color:var(--faint); word-break:break-all">{{ projectPath }}</span>
         </div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:1px; background:var(--border,#262b33); border:1px solid var(--border,#262b33); border-radius:9px; overflow:hidden">
-          <div style="padding:10px 12px; background:var(--panel,#15181d); display:flex; flex-direction:column; gap:3px">
-            <span style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint,#6b7280)">Rama git</span>
+        <div class="transition-theme" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:9px; overflow:hidden">
+          <div class="transition-theme" style="padding:10px 12px; background:var(--panel); display:flex; flex-direction:column; gap:3px">
+            <span style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint)">Rama git</span>
             <span style="font-family:'Geist Mono',monospace; font-size:13px; font-weight:500">{{ gitBranch }}</span>
           </div>
-          <div style="padding:10px 12px; background:var(--panel,#15181d); display:flex; flex-direction:column; gap:3px">
-            <span style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint,#6b7280)">Modelo</span>
+          <div class="transition-theme" style="padding:10px 12px; background:var(--panel); display:flex; flex-direction:column; gap:3px">
+            <span style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint)">Modelo</span>
             <span style="font-family:'Geist Mono',monospace; font-size:13px; font-weight:500">{{ modelName }}</span>
           </div>
-          <div style="padding:10px 12px; background:var(--panel,#15181d); display:flex; flex-direction:column; gap:3px">
-            <span style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint,#6b7280)">Esfuerzo</span>
+          <div class="transition-theme" style="padding:10px 12px; background:var(--panel); display:flex; flex-direction:column; gap:3px">
+            <span style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint)">Esfuerzo</span>
             <span style="font-family:'Geist Mono',monospace; font-size:13px; font-weight:500; text-transform:capitalize">{{ effortLevel }}</span>
           </div>
         </div>
         <div style="display:flex; flex-direction:column; gap:10px">
           <div style="display:flex; flex-direction:column; gap:5px">
-            <label style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint,#6b7280)">Objetivo</label>
-            <input value="{{ objective }}" onInput="{{ setObjective }}" placeholder="Sin definir — anota el objetivo de la sesión" style="font:inherit; font-size:13px; padding:9px 11px; border-radius:8px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); color:var(--text,#e6e9ee); outline:none" style-focus="border-color:var(--status,#3fb950)" />
+            <label style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint)">Objetivo</label>
+            <input class="input-field transition-theme" value="{{ objective }}" onInput="{{ setObjective }}" placeholder="Sin definir — anota el objetivo de la sesión" style="width:100%" />
           </div>
           <div style="display:flex; flex-direction:column; gap:5px">
-            <label style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint,#6b7280)">Tipo de tarea</label>
-            <input value="{{ taskType }}" onInput="{{ setTaskType }}" placeholder="Sin definir — p.ej. refactor, debugging, feature" style="font:inherit; font-size:13px; padding:9px 11px; border-radius:8px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); color:var(--text,#e6e9ee); outline:none" style-focus="border-color:var(--status,#3fb950)" />
+            <label style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint)">Tipo de tarea</label>
+            <input class="input-field transition-theme" value="{{ taskType }}" onInput="{{ setTaskType }}" placeholder="Sin definir — p.ej. refactor, debugging, feature" style="width:100%" />
           </div>
         </div>
       </div>
 
       <!-- recommendations -->
-      <div style="padding:20px; border-radius:12px; background:var(--panel,#15181d); border:1px solid var(--border,#262b33); display:flex; flex-direction:column; gap:14px">
+      <div class="dashboard-card transition-theme" style="padding:20px; display:flex; flex-direction:column; gap:14px">
         <div style="display:flex; align-items:baseline; justify-content:space-between">
           <span style="font-size:13px; font-weight:600">Recomendaciones</span>
-          <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint,#6b7280)">{{ recCount }}</span>
+          <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint)">{{ recCount }}</span>
         </div>
         <div style="display:flex; flex-direction:column; gap:10px">
           <sc-for list="{{ recommendations }}" as="rec" hint-placeholder-count="1">
-            <div style="display:flex; gap:12px; padding:13px 14px; border-radius:10px; background:var(--bg,#0e1013); border:1px solid var(--border,#262b33); border-left:3px solid {{ rec.color }}">
+            <div class="transition-theme" style="display:flex; gap:12px; padding:13px 14px; border-radius:10px; background:var(--input); border:1px solid var(--border); border-left:3px solid {{ rec.color }}">
               <div style="display:flex; flex-direction:column; gap:4px; flex:1; min-width:0">
                 <div style="display:flex; align-items:center; gap:8px">
                   <span style="font-size:9.5px; font-weight:700; letter-spacing:0.1em; padding:2px 7px; border-radius:4px; color:{{ rec.color }}; background:{{ rec.tint }}">{{ rec.label }}</span>
                 </div>
-                <span style="font-size:13.5px; font-weight:500; color:var(--text,#e6e9ee); text-wrap:pretty">{{ rec.message }}</span>
-                <span style="font-size:12px; color:var(--dim,#9aa3af); text-wrap:pretty">{{ rec.reason }}</span>
+                <span style="font-size:13.5px; font-weight:500; color:var(--text); text-wrap:pretty">{{ rec.message }}</span>
+                <span style="font-size:12px; color:var(--dim); text-wrap:pretty">{{ rec.reason }}</span>
               </div>
             </div>
           </sc-for>
@@ -272,7 +373,7 @@
     </div>
 
     <div style="display:flex; justify-content:center; padding-top:6px">
-      <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint,#6b7280)">GET /api/dashboard · snapshot {{ snapshotIso }}</span>
+      <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint)">GET /api/dashboard · snapshot {{ snapshotIso }}</span>
     </div>
 
   </div>
@@ -281,17 +382,9 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:1180}}">
 class Component extends DCLogic {
-  // === Fuente de datos ================================================
-  // Hoy lee un mock local (./dashboard.json) con la MISMA forma que el
-  // contrato real. Para conectar el backend, cambia API_URL por
-  // '/api/dashboard' y (si aplica) ajusta CORS/mismo origen. Nada más.
   API_URL = 'http://127.0.0.1:8787/api/dashboard';
   POLL_MS = 10000;
 
-  // Copia embebida del contrato. Solo se usa como respaldo cuando el
-  // fetch no está disponible (p. ej. la vista previa sandbox bloquea la
-  // lectura de archivos locales). Con el backend real, fetch gana y esto
-  // nunca se usa.
   MOCK = {
     generated_at: '2026-06-27T13:45:12Z', status: 'green',
     current_session: {
@@ -315,6 +408,7 @@ class Component extends DCLogic {
     data: null, loading: true, error: null,
     theme: 'dark', secs: 0,
     objective: '', taskType: '', annTouched: false,
+    lastSessionId: null,
   };
 
   componentDidMount() {
@@ -344,24 +438,29 @@ class Component extends DCLogic {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const j = await r.json();
       this.setState(s => {
-        // Sembrar anotaciones desde el backend solo si el usuario no las ha tocado.
         const cs = j.current_session || {};
-        const seed = !s.annTouched;
+        const sessionChanged = s.lastSessionId && cs.id && s.lastSessionId !== cs.id;
+        const seed = !s.annTouched || sessionChanged;
         return {
           data: j, error: null, loading: false, secs: 0,
+          lastSessionId: cs.id || null,
           objective: seed ? (cs.objective || '') : s.objective,
           taskType: seed ? (cs.task_type || '') : s.taskType,
+          annTouched: sessionChanged ? false : s.annTouched,
         };
       });
     } catch (e) {
-      // Sin backend accesible (o sandbox de vista previa): usar el mock embebido.
       this.setState(s => {
         if (s.data) return { error: (e && e.message) || 'No se pudo leer el snapshot' };
-        const j = this.MOCK; const cs = j.current_session || {}; const seed = !s.annTouched;
+        const j = this.MOCK; const cs = j.current_session || {};
+        const sessionChanged = s.lastSessionId && cs.id && s.lastSessionId !== cs.id;
+        const seed = !s.annTouched || sessionChanged;
         return {
           data: j, error: null, loading: false, secs: 0, fallback: true,
+          lastSessionId: cs.id || null,
           objective: seed ? (cs.objective || '') : s.objective,
           taskType: seed ? (cs.task_type || '') : s.taskType,
+          annTouched: sessionChanged ? false : s.annTouched,
         };
       });
     }
@@ -369,6 +468,27 @@ class Component extends DCLogic {
 
   saveAnn(objective, taskType) {
     try { localStorage.setItem('ao_annotations', JSON.stringify({ objective, taskType })); } catch (e) {}
+
+    const S = this.state;
+    if (S.data && S.data.current_session && !S.fallback) {
+      const sessionId = S.data.current_session.id;
+      if (this._saveTimeout) clearTimeout(this._saveTimeout);
+      this._saveTimeout = setTimeout(async () => {
+        try {
+          const url = this.API_URL.replace('/dashboard', `/sessions/${sessionId}`);
+          const res = await fetch(url, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ objective: objective || '', task_type: taskType || '' })
+          });
+          if (!res.ok) {
+            console.error("No se pudieron guardar las anotaciones en el servidor:", res.statusText);
+          }
+        } catch (err) {
+          console.error("Error al guardar anotaciones en el servidor:", err);
+        }
+      }, 500);
+    }
   }
 
   fmtTok(n) {
@@ -399,7 +519,6 @@ class Component extends DCLogic {
     const S = this.state;
     const j = S.data;
 
-    // Conexión / frescura
     let conn;
     if (S.loading && !j) conn = { color: '#8a919c', label: 'Conectando…', pulse: true };
     else if (S.error) conn = { color: '#f85149', label: 'Sin conexión — reintentando', pulse: true };
@@ -407,7 +526,6 @@ class Component extends DCLogic {
     else if (S.secs >= 30) conn = { color: '#d8a01a', label: 'Datos antiguos', pulse: false };
     else conn = { color: '#3fb950', label: 'En vivo', pulse: false };
 
-    // Normalizar el payload del contrato a un objeto plano `d`
     const status = (j && j.status) || 'green';
     let d;
     if (j) {
@@ -446,8 +564,32 @@ class Component extends DCLogic {
     }
 
     const themes = {
-      dark: { bg: '#0e1013', panel: '#15181d', panel2: '#1b1f26', border: '#262b33', track: '#23272f', text: '#e6e9ee', dim: '#9aa3af', faint: '#6b7280', input: '#0b0d10' },
-      light: { bg: '#f4f5f7', panel: '#ffffff', panel2: '#eceef1', border: '#e0e3e8', track: '#e6e9ed', text: '#1a1d22', dim: '#5b626d', faint: '#98a0ab', input: '#ffffff' },
+      dark: { 
+        bg: '#090b0d', 
+        bgGlow: 'rgba(91,155,255,0.03)',
+        panel: 'rgba(21, 24, 29, 0.75)', 
+        panel2: 'rgba(27, 31, 38, 0.75)', 
+        border: 'rgba(38, 43, 51, 0.65)', 
+        track: '#1b1f25', 
+        text: '#f0f3f6', 
+        dim: '#8b949e', 
+        faint: '#484f58', 
+        input: '#0d1117',
+        shadow: '0 8px 24px -4px rgba(0, 0, 0, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.05)'
+      },
+      light: { 
+        bg: '#f6f8fa', 
+        bgGlow: 'rgba(91,155,255,0.02)',
+        panel: 'rgba(255, 255, 255, 0.8)', 
+        panel2: 'rgba(243, 245, 248, 0.8)', 
+        border: 'rgba(209, 213, 219, 0.6)', 
+        track: '#eaeef2', 
+        text: '#24292f', 
+        dim: '#57606a', 
+        faint: '#8c959f', 
+        input: '#ffffff',
+        shadow: '0 4px 16px -2px rgba(0, 0, 0, 0.05)'
+      },
     };
     const statusColors = { green: '#3fb950', yellow: '#d8a01a', red: '#f85149', critical: '#ff453a' };
     const statusLabels = { green: 'Estado: Normal', yellow: 'Estado: Advertencia', red: 'Estado: Alto', critical: 'Estado: Crítico' };
@@ -460,7 +602,7 @@ class Component extends DCLogic {
     const tintMap = { green: 'rgba(63,185,80,0.13)', yellow: 'rgba(216,160,26,0.15)', red: 'rgba(248,81,73,0.15)', critical: 'rgba(255,69,58,0.16)' };
     const stTint = tintMap[status] || tintMap.green;
 
-    const rootStyle = `--bg:${t.bg};--panel:${t.panel};--panel2:${t.panel2};--border:${t.border};--track:${t.track};--text:${t.text};--dim:${t.dim};--faint:${t.faint};--input:${t.input};--status:${sc};--status-tint:${stTint}`;
+    const rootStyle = `--bg:${t.bg};--bg-glow:${t.bgGlow};--panel:${t.panel};--panel2:${t.panel2};--border:${t.border};--track:${t.track};--text:${t.text};--dim:${t.dim};--faint:${t.faint};--input:${t.input};--shadow:${t.shadow};--status:${sc};--status-tint:${stTint}`;
 
     const qLabel = (q) => q === 'official' ? 'OFICIAL' : 'ESTIMADO';
     const qColor = (q) => q === 'official' ? 'var(--dim,#9aa3af)' : '#d8a01a';
@@ -469,10 +611,26 @@ class Component extends DCLogic {
     const fiveOffset = C * (1 - d.five.used / 100);
     const sevenOffset = C * (1 - d.seven.used / 100);
 
+    const getUsageColorName = (used) => {
+      if (used === null || used === undefined) return 'critical';
+      if (used < 50) return 'green';
+      if (used < 80) return 'yellow';
+      if (used < 95) return 'red';
+      return 'critical';
+    };
+
+    const fiveColorName = getUsageColorName(d.five.used);
+    const sevenColorName = getUsageColorName(d.seven.used);
+    const fiveStroke = "url(#grad-" + fiveColorName + ")";
+    const sevenStroke = "url(#grad-" + sevenColorName + ")";
+    const fiveColor = statusColors[fiveColorName] || statusColors.green;
+    const sevenColor = statusColors[sevenColorName] || statusColors.green;
+
     // tokens
     const tk = d.tok;
-    const tkTotal = tk.in + tk.out + tk.cc + tk.cr;
-    const w = (n) => (tkTotal ? (n / tkTotal * 100) : 0);
+    const regularInput = Math.max(0, tk.in - tk.cc - tk.cr);
+    const tkTotalVal = tk.in + tk.out;
+    const w = (n) => (tkTotalVal ? (n / tkTotalVal * 100) : 0);
 
     const recommendations = d.recs.map(r => ({
       message: r.message, reason: r.reason,
@@ -491,46 +649,42 @@ class Component extends DCLogic {
 
     return {
       rootStyle,
-      // connection bar
       connColor: conn.color,
       connLabel: conn.label,
       connPulse: conn.pulse ? 'animation:ao-blink 1.2s ease-in-out infinite' : '',
       snapAgo: (S.loading && !j) ? '—' : this.ago(S.secs),
+      showMockBadge: !!S.fallback,
       refresh: () => this.fetchData(),
       toggleTheme: () => this.setState(s => { const nt = s.theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('ao_theme', nt); } catch (e) {} return { theme: nt }; }),
       themeLabel: S.theme === 'dark' ? 'Oscuro' : 'Claro',
       themeGlyph: S.theme === 'dark' ? '◐' : '○',
-      // header
       projectName: d.session.project,
       modelName: d.session.model,
       statusColor: sc,
       statusLabel: statusLabels[status] || 'Estado: —',
       snapshotIso: d.snapshotIso || '—',
-      // banner
       showBanner,
       bannerStyle,
       bannerTag: status === 'critical' ? 'CRÍTICO' : 'AVISO',
       bannerText: top.message,
       bannerReason: top.reason,
-      // rings
       ringC: C,
-      fiveUsed: d.five.used, fiveRemaining: 100 - d.five.used, fiveOffset, fiveReset: d.five.reset,
-      sevenUsed: d.seven.used, sevenRemaining: 100 - d.seven.used, sevenOffset, sevenReset: d.seven.reset,
+      fiveUsed: Math.round(d.five.used), fiveRemaining: Math.round(100 - d.five.used), fiveOffset, fiveReset: d.five.reset,
+      sevenUsed: Math.round(d.seven.used), sevenRemaining: Math.round(100 - d.seven.used), sevenOffset, sevenReset: d.seven.reset,
       fiveQualityLabel: qLabel(d.five.quality), fiveQualityColor: qColor(d.five.quality),
       sevenQualityLabel: qLabel(d.seven.quality), sevenQualityColor: qColor(d.seven.quality),
-      // metrics
+      fiveStroke, sevenStroke,
+      fiveColor, sevenColor,
       costSession: this.fmtUsd(d.cost_session, 3),
       costToday: this.fmtUsd(d.cost_today, 2),
       burnRate: this.fmtUsd(d.burn, 2),
-      contextPct: d.context,
+      contextPct: Math.round(d.context),
       contextTokens: this.fmtTok(usedCtxTokens),
       contextWindow: this.fmtWindow(d.contextWindow),
       contextBarColor: contextBar,
-      // tokens
-      tokTotal: this.fmtTok(tkTotal),
+      tokTotal: this.fmtTok(tkTotalVal),
       tokIn: this.fmtTok(tk.in), tokOut: this.fmtTok(tk.out), tokCc: this.fmtTok(tk.cc), tokCr: this.fmtTok(tk.cr),
-      tokInW: w(tk.in), tokOutW: w(tk.out), tokCcW: w(tk.cc), tokCrW: w(tk.cr),
-      // session
+      tokInW: w(regularInput), tokOutW: w(tk.out), tokCcW: w(tk.cc), tokCrW: w(tk.cr),
       sessionName: d.session.name,
       projectPath: d.session.path,
       gitBranch: d.session.branch,
@@ -538,7 +692,6 @@ class Component extends DCLogic {
       sessionStarted: d.session.started,
       objective: S.objective || '', taskType: S.taskType || '',
       setObjective, setTaskType,
-      // recs
       recommendations,
       recCount: d.recs.length,
     };
