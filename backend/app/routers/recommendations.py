@@ -23,8 +23,18 @@ def list_recommendations(db: Session = Depends(get_session)) -> dict:
 
 
 @router.post("/{rec_id}/ack")
-def ack_recommendation(rec_id: str, db: Session = Depends(get_session)) -> dict:
+async def ack_recommendation(rec_id: str, db: Session = Depends(get_session)) -> dict:
     rec = rec_service.acknowledge(db, rec_id)
     if rec is None:
         raise HTTPException(status_code=404, detail="Recomendación no encontrada")
+
+    # Transmite la actualización del dashboard en tiempo real tras desactivar la recomendación
+    try:
+        from app.services.dashboard import build_dashboard
+        from app.services.websocket import manager
+        db_data = build_dashboard(db)
+        await manager.broadcast(db_data)
+    except Exception:
+        pass
+
     return rec_service.view_full(rec)

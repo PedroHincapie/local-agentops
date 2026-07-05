@@ -127,11 +127,27 @@ def _close_active_sessions(db: Session, workday_id: str, keep_external_id: str) 
 
 def current_session(db: Session) -> AgentSession | None:
     """Sesión activa más reciente (la de los últimos snapshots)."""
-    return db.exec(
+    active = db.exec(
         select(AgentSession)
         .where(AgentSession.status == "active")
         .order_by(AgentSession.started_at.desc())  # type: ignore[attr-defined]
     ).first()
+    if active is None:
+        return None
+
+    # Cerrar automáticamente si no hay actividad en los últimos 120 minutos
+    snap = _latest_snapshot(db, active)
+    if snap is not None:
+        now = datetime.now(UTC)
+        captured_at = snap.captured_at if snap.captured_at.tzinfo else snap.captured_at.replace(tzinfo=UTC)
+        if (now - captured_at).total_seconds() > 7200:
+            active.status = "closed"
+            active.ended_at = snap.captured_at
+            db.add(active)
+            db.commit()
+            return None
+
+    return active
 
 
 def get_session_by_id(db: Session, session_id: str) -> AgentSession | None:
@@ -185,3 +201,35 @@ def build_session_view(db: Session, agent_session: AgentSession) -> dict[str, An
         "snapshot_count": snapshot_count,
         "cost_session_usd": snap.cost_session_usd if snap else None,
     }
+
+
+def get_large_files(directory_path: str | None, limit: int = 5) -> list[dict[str, Any]]:
+    import os
+    if not directory_path or not os.path.isdir(directory_path):
+        return []
+
+    file_list = []
+    exclude_dirs = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", ".claude"}
+
+    try:
+        for root, dirs, files in os.walk(directory_path):
+            dirs[:] = [d for d in dirs if d not in exclude_dirs]
+            for file in files:
+                filepath = os.path.join(root, file)
+                try:
+                    if os.path.islink(filepath):
+                        continue
+                    size = os.path.getsize(filepath)
+                    rel_path = os.path.relpath(filepath, directory_path)
+                    file_list.append({
+                        "path": rel_path,
+                        "size_bytes": size,
+                        "size_kb": round(size / 1024, 1)
+                    })
+                except OSError:
+                    continue
+    except Exception:
+        return []
+
+    file_list.sort(key=lambda x: x["size_bytes"], reverse=True)
+    return file_list[:limit]

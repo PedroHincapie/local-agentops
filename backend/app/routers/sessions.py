@@ -26,8 +26,23 @@ def get_current_session(db: Session = Depends(get_session)) -> dict:
     return sessions_service.build_session_view(db, agent_session)
 
 
+@router.get("/current/large-files")
+def get_current_large_files(db: Session = Depends(get_session)) -> dict:
+    agent_session = sessions_service.current_session(db)
+    if agent_session is None:
+        raise HTTPException(status_code=404, detail="No hay sesión activa")
+
+    # Obtener el path del proyecto desde el snapshot más reciente
+    snap = sessions_service._latest_snapshot(db, agent_session)
+    path = snap.project_path if snap else None
+
+    # Escanea y devuelve los 5 archivos más pesados del proyecto
+    files = sessions_service.get_large_files(path, limit=5)
+    return {"files": files}
+
+
 @router.patch("/{session_id}")
-def patch_session(
+async def patch_session(
     session_id: str,
     annotation: SessionAnnotation,
     db: Session = Depends(get_session),
@@ -45,4 +60,14 @@ def patch_session(
     db.add(agent_session)
     db.commit()
     db.refresh(agent_session)
+
+    # Transmite la actualización en tiempo real del dashboard
+    try:
+        from app.services.dashboard import build_dashboard
+        from app.services.websocket import manager
+        db_data = build_dashboard(db)
+        await manager.broadcast(db_data)
+    except Exception:
+        pass
+
     return sessions_service.build_session_view(db, agent_session)
