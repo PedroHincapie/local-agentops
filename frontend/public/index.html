@@ -30,12 +30,13 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.25s ease;
+    --hover-glow: rgba(0,0,0,0.02);
   }
 
   .dashboard-card:hover {
     transform: translateY(-2px);
-    border-color: color-mix(in srgb, var(--border) 60%, var(--text));
-    box-shadow: var(--shadow), 0 12px 30px -4px rgba(0,0,0,0.15);
+    border-color: color-mix(in srgb, var(--border) 50%, var(--hover-glow-border, var(--text)));
+    box-shadow: var(--shadow), 0 12px 32px -4px var(--hover-glow);
   }
 
   .btn-action {
@@ -97,26 +98,69 @@
 </style>
 </helmet>
 <div style="{{ rootStyle }}">
-<div class="transition-theme" style="min-height:100vh; padding:22px 26px 60px; font-family:'Geist',system-ui,sans-serif; letter-spacing:-0.01em; background: radial-gradient(circle at top right, var(--bg-glow), transparent 45%), radial-gradient(circle at bottom left, var(--bg-glow), transparent 45%), var(--bg); color:var(--text)" data-screen-label="AgentOps Dashboard">
+<div class="transition-theme" style="min-height:100vh; padding:22px 26px 60px; font-family:'Geist',system-ui,sans-serif; letter-spacing:-0.01em; background: radial-gradient(circle at top right, var(--bg-status-glow), transparent 45%), radial-gradient(circle at bottom left, var(--bg-status-glow), transparent 45%), var(--bg); color:var(--text)" data-screen-label="AgentOps Dashboard">
   
   <svg style="position: absolute; width: 0; height: 0;">
     <defs>
+      <!-- Gradients for progress rings -->
       <linearGradient id="grad-green" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#2ea043" />
-        <stop offset="100%" stop-color="#56d364" />
+        <stop offset="0%" stop-color="#10b981" />
+        <stop offset="100%" stop-color="#34d399" />
       </linearGradient>
       <linearGradient id="grad-yellow" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#d29922" />
-        <stop offset="100%" stop-color="#e3b341" />
+        <stop offset="0%" stop-color="#f59e0b" />
+        <stop offset="100%" stop-color="#fbbf24" />
       </linearGradient>
       <linearGradient id="grad-red" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#da3633" />
-        <stop offset="100%" stop-color="#f85149" />
+        <stop offset="0%" stop-color="#ef4444" />
+        <stop offset="100%" stop-color="#f87171" />
       </linearGradient>
       <linearGradient id="grad-critical" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#cf222e" />
-        <stop offset="100%" stop-color="#ff6b6b" />
+        <stop offset="0%" stop-color="#dc2626" />
+        <stop offset="100%" stop-color="#f43f5e" />
       </linearGradient>
+
+      <!-- Glow Filters for SVG elements -->
+      <filter id="glow-green" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="5" result="blur" />
+        <feComponentTransfer in="blur" result="glow1">
+          <feFuncA type="linear" slope="0.6" />
+        </feComponentTransfer>
+        <feMerge>
+          <feMergeNode in="glow1" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <filter id="glow-yellow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="5" result="blur" />
+        <feComponentTransfer in="blur" result="glow1">
+          <feFuncA type="linear" slope="0.6" />
+        </feComponentTransfer>
+        <feMerge>
+          <feMergeNode in="glow1" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <filter id="glow-red" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="6" result="blur" />
+        <feComponentTransfer in="blur" result="glow1">
+          <feFuncA type="linear" slope="0.75" />
+        </feComponentTransfer>
+        <feMerge>
+          <feMergeNode in="glow1" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <filter id="glow-critical" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="7" result="blur" />
+        <feComponentTransfer in="blur" result="glow1">
+          <feFuncA type="linear" slope="0.85" />
+        </feComponentTransfer>
+        <feMerge>
+          <feMergeNode in="glow1" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
     </defs>
   </svg>
 
@@ -192,11 +236,11 @@
       <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px">
 
         <!-- 5h -->
-        <div class="dashboard-card transition-theme" style="position:relative; padding:24px; display:flex; align-items:center; gap:24px">
+        <div class="dashboard-card transition-theme" style="position:relative; padding:24px; display:flex; align-items:center; gap:24px; --hover-glow:{{ fiveColor }}22; --hover-glow-border:{{ fiveColor }};">
           <div style="position:relative; width:176px; height:176px; flex-shrink:0">
             <svg width="176" height="176" viewBox="0 0 180 180" style="transform:rotate(-90deg)">
               <circle cx="90" cy="90" r="78" fill="none" stroke="var(--track)" strokeWidth="13"></circle>
-              <circle cx="90" cy="90" r="78" fill="none" stroke="{{ fiveStroke }}" strokeWidth="13" strokeLinecap="round" strokeDasharray="{{ ringC }}" strokeDashoffset="{{ fiveOffset }}" style="transition: stroke-dashoffset 0.4s ease;"></circle>
+              <circle cx="90" cy="90" r="78" fill="none" stroke="{{ fiveStroke }}" strokeWidth="13" strokeLinecap="round" strokeDasharray="{{ ringC }}" strokeDashoffset="{{ fiveOffset }}" filter="url(#glow-{{ fiveColorName }})" style="transition: stroke-dashoffset 0.4s ease;"></circle>
             </svg>
             <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px">
               <span style="font-family:'Geist Mono',monospace; font-size:42px; font-weight:600; line-height:1; color:var(--text)">{{ fiveUsed }}<span style="font-size:20px; color:var(--dim)">%</span></span>
@@ -220,11 +264,11 @@
         </div>
 
         <!-- 7d -->
-        <div class="dashboard-card transition-theme" style="position:relative; padding:24px; display:flex; align-items:center; gap:24px">
+        <div class="dashboard-card transition-theme" style="position:relative; padding:24px; display:flex; align-items:center; gap:24px; --hover-glow:{{ sevenColor }}22; --hover-glow-border:{{ sevenColor }};">
           <div style="position:relative; width:176px; height:176px; flex-shrink:0">
             <svg width="176" height="176" viewBox="0 0 180 180" style="transform:rotate(-90deg)">
               <circle cx="90" cy="90" r="78" fill="none" stroke="var(--track)" strokeWidth="13"></circle>
-              <circle cx="90" cy="90" r="78" fill="none" stroke="{{ sevenStroke }}" strokeWidth="13" strokeLinecap="round" strokeDasharray="{{ ringC }}" strokeDashoffset="{{ sevenOffset }}" style="transition: stroke-dashoffset 0.4s ease;"></circle>
+              <circle cx="90" cy="90" r="78" fill="none" stroke="{{ sevenStroke }}" strokeWidth="13" strokeLinecap="round" strokeDasharray="{{ ringC }}" strokeDashoffset="{{ sevenOffset }}" filter="url(#glow-{{ sevenColorName }})" style="transition: stroke-dashoffset 0.4s ease;"></circle>
             </svg>
             <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px">
               <span style="font-family:'Geist Mono',monospace; font-size:42px; font-weight:600; line-height:1; color:var(--text)">{{ sevenUsed }}<span style="font-size:20px; color:var(--dim)">%</span></span>
@@ -251,22 +295,22 @@
 
     <!-- secondary metrics -->
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px">
-      <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:8px">
+      <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:8px; --hover-glow:rgba(63, 185, 80, 0.15); --hover-glow-border:#3fb950;">
         <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint)">Costo sesión</span>
         <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ costSession }}</span>
         <span style="font-size:11.5px; color:var(--faint)">sesión activa</span>
       </div>
-      <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:8px">
+      <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:8px; --hover-glow:rgba(91, 155, 255, 0.15); --hover-glow-border:#5b9bff;">
         <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint)">Costo del día</span>
         <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ costToday }}</span>
         <span style="font-size:11.5px; color:var(--faint)">acumulado hoy</span>
       </div>
-      <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:8px">
+      <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:8px; --hover-glow:rgba(216, 160, 26, 0.15); --hover-glow-border:#d8a01a;">
         <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint)">Burn rate</span>
         <span style="font-family:'Geist Mono',monospace; font-size:24px; font-weight:600">{{ burnRate }}<span style="font-size:14px; color:var(--dim)">/h</span></span>
         <span style="font-size:11.5px; color:var(--faint)">ritmo de gasto</span>
       </div>
-      <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:8px">
+      <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:8px; --hover-glow:rgba(188, 140, 255, 0.15); --hover-glow-border:#bc8cff;">
         <div style="display:flex; align-items:baseline; justify-content:space-between">
           <span style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint)">Contexto</span>
           <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint)">{{ contextTokens }} / {{ contextWindow }}</span>
@@ -279,16 +323,16 @@
     </div>
 
     <!-- tokens breakdown -->
-    <div class="dashboard-card transition-theme" style="padding:18px 20px; display:flex; flex-direction:column; gap:14px">
+    <div class="dashboard-card transition-theme" style="padding:18px 20px; display:flex; flex-direction:column; gap:14px; --hover-glow:rgba(188, 140, 255, 0.12); --hover-glow-border:#bc8cff;">
       <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap">
         <span style="font-size:13px; font-weight:600">Desglose de tokens</span>
         <span style="font-size:11.5px; color:var(--faint)">total <span style="font-family:'Geist Mono',monospace; color:var(--dim)">{{ tokTotal }}</span></span>
       </div>
       <div class="token-bar" style="display:flex; height:14px; border-radius:7px; overflow:hidden; background:var(--track); gap:2px">
-        <div class="token-segment" style="background:#5b9bff; width:{{ tokInW }}%; transition: width 0.3s ease;"></div>
-        <div class="token-segment" style="background:#56d364; width:{{ tokOutW }}%; transition: width 0.3s ease;"></div>
-        <div class="token-segment" style="background:#e3b341; width:{{ tokCcW }}%; transition: width 0.3s ease;"></div>
-        <div class="token-segment" style="background:#bc8cff; width:{{ tokCrW }}%; transition: width 0.3s ease;"></div>
+        <div class="token-segment" onMouseEnter="{{ hoverIn }}" onMouseMove="{{ hoverMove }}" onMouseLeave="{{ hoverOut }}" style="background:#5b9bff; width:{{ tokInW }}%; transition: width 0.3s ease;"></div>
+        <div class="token-segment" onMouseEnter="{{ hoverOutSegment }}" onMouseMove="{{ hoverMove }}" onMouseLeave="{{ hoverOut }}" style="background:#56d364; width:{{ tokOutW }}%; transition: width 0.3s ease;"></div>
+        <div class="token-segment" onMouseEnter="{{ hoverCc }}" onMouseMove="{{ hoverMove }}" onMouseLeave="{{ hoverOut }}" style="background:#e3b341; width:{{ tokCcW }}%; transition: width 0.3s ease;"></div>
+        <div class="token-segment" onMouseEnter="{{ hoverCr }}" onMouseMove="{{ hoverMove }}" onMouseLeave="{{ hoverOut }}" style="background:#bc8cff; width:{{ tokCrW }}%; transition: width 0.3s ease;"></div>
       </div>
       <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px">
         <div style="display:flex; align-items:center; gap:9px">
@@ -314,7 +358,7 @@
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px">
 
       <!-- current session -->
-      <div class="dashboard-card transition-theme" style="padding:20px; display:flex; flex-direction:column; gap:16px">
+      <div class="dashboard-card transition-theme" style="padding:20px; display:flex; flex-direction:column; gap:16px; --hover-glow:var(--status-tint); --hover-glow-border:var(--status);">
         <div style="display:flex; align-items:center; gap:8px">
           <span style="font-size:13px; font-weight:600">Sesión actual</span>
           <span style="width:6px; height:6px; border-radius:50%; background:var(--status)"></span>
@@ -343,22 +387,31 @@
             <label style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint)">Objetivo</label>
             <input class="input-field transition-theme" value="{{ objective }}" onInput="{{ setObjective }}" placeholder="Sin definir — anota el objetivo de la sesión" style="width:100%" />
           </div>
-          <div style="display:flex; flex-direction:column; gap:5px">
+          <div style="display:flex; flex-direction:column; gap:8px">
             <label style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--faint)">Tipo de tarea</label>
-            <input class="input-field transition-theme" value="{{ taskType }}" onInput="{{ setTaskType }}" placeholder="Sin definir — p.ej. refactor, debugging, feature" style="width:100%" />
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px">
+              <sc-for list="{{ taskPills }}" as="pill">
+                <button onClick="{{ pill.select }}" class="transition-theme" style="padding:6px 11px; font-size:12px; font-weight:600; border-radius:8px; border:1px solid {{ pill.borderColor }}; background:{{ pill.background }}; color:{{ pill.color }}; cursor:pointer; font-family:inherit; transition: all 0.15s ease;">
+                  {{ pill.label }}
+                </button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ showCustomTaskInput }}" hint-placeholder-val="{{ false }}">
+              <input class="input-field transition-theme" value="{{ customTaskType }}" onInput="{{ onCustomTaskInput }}" placeholder="Escribe el tipo de tarea personalizado..." style="width:100%" />
+            </sc-if>
           </div>
         </div>
       </div>
 
       <!-- recommendations -->
-      <div class="dashboard-card transition-theme" style="padding:20px; display:flex; flex-direction:column; gap:14px">
+      <div class="dashboard-card transition-theme" style="padding:20px; display:flex; flex-direction:column; gap:14px; --hover-glow:rgba(91, 155, 255, 0.12); --hover-glow-border:#5b9bff;">
         <div style="display:flex; align-items:baseline; justify-content:space-between">
           <span style="font-size:13px; font-weight:600">Recomendaciones</span>
           <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint)">{{ recCount }}</span>
         </div>
         <div style="display:flex; flex-direction:column; gap:10px">
           <sc-for list="{{ recommendations }}" as="rec" hint-placeholder-count="1">
-            <div class="transition-theme" style="display:flex; gap:12px; padding:13px 14px; border-radius:10px; background:var(--input); border:1px solid var(--border); border-left:3px solid {{ rec.color }}">
+            <div class="transition-theme" style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:13px 14px; border-radius:10px; background:var(--input); border:1px solid var(--border); border-left:3px solid {{ rec.color }}; transition: all 0.2s ease;">
               <div style="display:flex; flex-direction:column; gap:4px; flex:1; min-width:0">
                 <div style="display:flex; align-items:center; gap:8px">
                   <span style="font-size:9.5px; font-weight:700; letter-spacing:0.1em; padding:2px 7px; border-radius:4px; color:{{ rec.color }}; background:{{ rec.tint }}">{{ rec.label }}</span>
@@ -366,6 +419,7 @@
                 <span style="font-size:13.5px; font-weight:500; color:var(--text); text-wrap:pretty">{{ rec.message }}</span>
                 <span style="font-size:12px; color:var(--dim); text-wrap:pretty">{{ rec.reason }}</span>
               </div>
+              <button onClick="{{ rec.ack }}" style="background:transparent; border:none; color:var(--faint); cursor:pointer; font-size:14px; padding:2px 6px; line-height:1; transition:color 0.15s ease;" onMouseEnter="this.style.color='var(--text)'" onMouseLeave="this.style.color='var(--faint)'">✕</button>
             </div>
           </sc-for>
         </div>
@@ -375,6 +429,18 @@
     <div style="display:flex; justify-content:center; padding-top:6px">
       <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--faint)">GET /api/dashboard · snapshot {{ snapshotIso }}</span>
     </div>
+
+    <!-- Floating Tooltip -->
+    <sc-if value="{{ tooltipActive }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed; left:{{ tooltipX }}px; top:{{ tooltipY }}px; transform:translate(-50%, -125%); background:rgba(15, 20, 25, 0.95); border:1px solid var(--border); border-radius:10px; padding:10px 14px; box-shadow:0 8px 30px rgba(0,0,0,0.5); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:9999; color:var(--text); pointer-events:none; font-size:12.5px; display:flex; flex-direction:column; gap:4px; font-family:'Geist',system-ui,sans-serif;">
+        <div style="display:flex; align-items:center; gap:8px; font-weight:600">
+          <span style="width:8px; height:8px; border-radius:50%; background:{{ tooltipColor }}"></span>
+          {{ tooltipLabel }}
+        </div>
+        <div style="font-family:'Geist Mono',monospace; color:var(--text)">{{ tooltipVal }} tokens ({{ tooltipPct }}%)</div>
+        <div style="color:#56d364; font-weight:600">Est: ~{{ tooltipCost }}</div>
+      </div>
+    </sc-if>
 
   </div>
 </div>
@@ -409,6 +475,8 @@ class Component extends DCLogic {
     theme: 'dark', secs: 0,
     objective: '', taskType: '', annTouched: false,
     lastSessionId: null,
+    activeTooltip: null,
+    dismissedRecs: [],
   };
 
   componentDidMount() {
@@ -497,6 +565,62 @@ class Component extends DCLogic {
     return String(n);
   }
   fmtUsd(n, d) { return '$' + (Number(n) || 0).toFixed(d); }
+
+  getTokenCosts(modelName) {
+    const isOpus = modelName && modelName.toLowerCase().includes('opus');
+    if (isOpus) {
+      return { in: 15.0, out: 75.0, cc: 18.75, cr: 1.50 };
+    }
+    return { in: 3.0, out: 15.0, cc: 3.75, cr: 0.30 };
+  }
+
+  showTooltip(e, label, val, pct, color, costPerMillion) {
+    const cost = val > 0 ? '$' + (val * costPerMillion / 1000000).toFixed(5) : '$0.00000';
+    this.setState({
+      activeTooltip: {
+        label,
+        val: this.fmtTok(val),
+        pct: Math.round(pct),
+        color,
+        cost,
+        x: e.clientX,
+        y: e.clientY
+      }
+    });
+  }
+
+  moveTooltip(e) {
+    this.setState(s => {
+      if (!s.activeTooltip) return null;
+      return {
+        activeTooltip: {
+          ...s.activeTooltip,
+          x: e.clientX,
+          y: e.clientY
+        }
+      };
+    });
+  }
+
+  hideTooltip() {
+    this.setState({ activeTooltip: null });
+  }
+
+  async ackRecommendation(id) {
+    this.setState(s => ({
+      dismissedRecs: [...(s.dismissedRecs || []), id]
+    }));
+    if (this.state.fallback) return;
+    try {
+      const url = this.API_URL.replace('/dashboard', `/recommendations/${id}/ack`);
+      const res = await fetch(url, { method: 'POST' });
+      if (!res.ok) {
+        console.error("Error al marcar recomendación como leída:", res.statusText);
+      }
+    } catch (err) {
+      console.error("Error de red al marcar recomendación:", err);
+    }
+  }
   fmtWindow(n) {
     if (!n) return '—';
     if (n % 1000000 === 0) return (n / 1000000) + 'M';
@@ -602,7 +726,15 @@ class Component extends DCLogic {
     const tintMap = { green: 'rgba(63,185,80,0.13)', yellow: 'rgba(216,160,26,0.15)', red: 'rgba(248,81,73,0.15)', critical: 'rgba(255,69,58,0.16)' };
     const stTint = tintMap[status] || tintMap.green;
 
-    const rootStyle = `--bg:${t.bg};--bg-glow:${t.bgGlow};--panel:${t.panel};--panel2:${t.panel2};--border:${t.border};--track:${t.track};--text:${t.text};--dim:${t.dim};--faint:${t.faint};--input:${t.input};--shadow:${t.shadow};--status:${sc};--status-tint:${stTint}`;
+    const statusGlowMap = {
+      green: S.theme === 'dark' ? 'rgba(16, 185, 129, 0.04)' : 'rgba(16, 185, 129, 0.02)',
+      yellow: S.theme === 'dark' ? 'rgba(245, 158, 11, 0.06)' : 'rgba(245, 158, 11, 0.03)',
+      red: S.theme === 'dark' ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.04)',
+      critical: S.theme === 'dark' ? 'rgba(220, 38, 38, 0.10)' : 'rgba(220, 38, 38, 0.05)'
+    };
+    const statusGlow = statusGlowMap[status] || statusGlowMap.green;
+
+    const rootStyle = `--bg:${t.bg};--bg-glow:${t.bgGlow};--panel:${t.panel};--panel2:${t.panel2};--border:${t.border};--track:${t.track};--text:${t.text};--dim:${t.dim};--faint:${t.faint};--input:${t.input};--shadow:${t.shadow};--status:${sc};--status-tint:${stTint};--bg-status-glow:${statusGlow}`;
 
     const qLabel = (q) => q === 'official' ? 'OFICIAL' : 'ESTIMADO';
     const qColor = (q) => q === 'official' ? 'var(--dim,#9aa3af)' : '#d8a01a';
@@ -632,10 +764,24 @@ class Component extends DCLogic {
     const tkTotalVal = tk.in + tk.out;
     const w = (n) => (tkTotalVal ? (n / tkTotalVal * 100) : 0);
 
-    const recommendations = d.recs.map(r => ({
-      message: r.message, reason: r.reason,
-      color: sevColors[r.type] || sevColors.info, label: sevLabels[r.type] || 'INFO', tint: sevTint[r.type] || sevTint.info,
-    }));
+    const hoverMove = (e) => this.moveTooltip(e);
+    const hoverOut = () => this.hideTooltip();
+    const rates = this.getTokenCosts(d.session.model || m.model_name);
+    const hoverIn = (e) => this.showTooltip(e, 'Input (Regular)', regularInput, w(regularInput), '#5b9bff', rates.in);
+    const hoverOutSegment = (e) => this.showTooltip(e, 'Output', tk.out, w(tk.out), '#56d364', rates.out);
+    const hoverCc = (e) => this.showTooltip(e, 'Cache Creation', tk.cc, w(tk.cc), '#e3b341', rates.cc);
+    const hoverCr = (e) => this.showTooltip(e, 'Cache Read', tk.cr, w(tk.cr), '#bc8cff', rates.cr);
+
+    const dismissed = S.dismissedRecs || [];
+    const ackRec = (id) => this.ackRecommendation(id);
+    const recommendations = d.recs
+      .filter(r => !dismissed.includes(r.id))
+      .map(r => ({
+        id: r.id,
+        message: r.message, reason: r.reason,
+        color: sevColors[r.type] || sevColors.info, label: sevLabels[r.type] || 'INFO', tint: sevTint[r.type] || sevTint.info,
+        ack: () => ackRec(r.id)
+      }));
 
     const showBanner = (status === 'red' || status === 'critical');
     const top = d.recs[0] || { message: '', reason: '' };
@@ -645,7 +791,43 @@ class Component extends DCLogic {
     const usedCtxTokens = Math.round(d.contextWindow * d.context / 100);
 
     const setObjective = (e) => { const v = e.target.value; this.setState({ objective: v, annTouched: true }); this.saveAnn(v, this.state.taskType); };
-    const setTaskType = (e) => { const v = e.target.value; this.setState({ taskType: v, annTouched: true }); this.saveAnn(this.state.objective, v); };
+
+    const predefined = ['feature', 'debugging', 'refactor', 'docs', 'test'];
+    const currentTask = (S.taskType || '').toLowerCase();
+    const isCustom = currentTask && !predefined.includes(currentTask);
+
+    const selectTask = (name) => {
+      let nextVal = name;
+      if (name === 'custom') {
+        nextVal = isCustom ? S.taskType : 'personalizado';
+      }
+      this.setState({ taskType: nextVal, annTouched: true });
+      this.saveAnn(S.objective, nextVal);
+    };
+
+    const taskPills = [
+      { name: 'feature', color: '#10b981', label: 'Feature 🟢' },
+      { name: 'debugging', color: '#ef4444', label: 'Fix 🔴' },
+      { name: 'refactor', color: '#f59e0b', label: 'Refactor 🟡' },
+      { name: 'docs', color: '#3b82f6', label: 'Docs 🔵' },
+      { name: 'test', color: '#8b5cf6', label: 'Tests 🟣' },
+      { name: 'custom', color: '#8a919c', label: 'Otro ⚙️' }
+    ].map(p => {
+      const active = p.name === 'custom' ? isCustom : currentTask === p.name;
+      return {
+        label: p.label,
+        color: active ? p.color : 'var(--dim)',
+        background: active ? `${p.color}22` : 'var(--panel2)',
+        borderColor: active ? p.color : 'var(--border)',
+        select: () => selectTask(p.name)
+      };
+    });
+
+    const onCustomTaskInput = (e) => {
+      const v = e.target.value;
+      this.setState({ taskType: v, annTouched: true });
+      this.saveAnn(S.objective, v);
+    };
 
     return {
       rootStyle,
@@ -675,6 +857,7 @@ class Component extends DCLogic {
       sevenQualityLabel: qLabel(d.seven.quality), sevenQualityColor: qColor(d.seven.quality),
       fiveStroke, sevenStroke,
       fiveColor, sevenColor,
+      fiveColorName, sevenColorName,
       costSession: this.fmtUsd(d.cost_session, 3),
       costToday: this.fmtUsd(d.cost_today, 2),
       burnRate: this.fmtUsd(d.burn, 2),
@@ -690,10 +873,23 @@ class Component extends DCLogic {
       gitBranch: d.session.branch,
       effortLevel: d.session.effort,
       sessionStarted: d.session.started,
-      objective: S.objective || '', taskType: S.taskType || '',
-      setObjective, setTaskType,
+      objective: S.objective || '',
+      setObjective,
       recommendations,
       recCount: d.recs.length,
+      taskPills,
+      showCustomTaskInput: isCustom || currentTask === 'personalizado' || currentTask === 'custom',
+      customTaskType: S.taskType || '',
+      onCustomTaskInput,
+      hoverIn, hoverOutSegment, hoverCc, hoverCr, hoverMove, hoverOut,
+      tooltipActive: !!S.activeTooltip,
+      tooltipX: S.activeTooltip ? S.activeTooltip.x : 0,
+      tooltipY: S.activeTooltip ? S.activeTooltip.y : 0,
+      tooltipLabel: S.activeTooltip ? S.activeTooltip.label : '',
+      tooltipVal: S.activeTooltip ? S.activeTooltip.val : '',
+      tooltipPct: S.activeTooltip ? S.activeTooltip.pct : 0,
+      tooltipColor: S.activeTooltip ? S.activeTooltip.color : '',
+      tooltipCost: S.activeTooltip ? S.activeTooltip.cost : '',
     };
   }
 }
