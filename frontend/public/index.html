@@ -230,16 +230,29 @@
       </div>
     </div>
 
-    <!-- banner -->
-    <sc-if value="{{ showBanner }}" hint-placeholder-val="{{ false }}">
-      <div style="{{ bannerStyle }}">
-        <span style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; padding:3px 8px; border-radius:5px; background:var(--status); color:#0b0d10; flex-shrink:0">{{ bannerTag }}</span>
-        <div style="display:flex; flex-direction:column; gap:4px">
-          <span style="font-size:13.5px; font-weight:600; color:var(--text)">{{ bannerText }}</span>
-          <span style="font-size:12px; color:var(--dim)">{{ bannerReason }}</span>
+    <!-- SEMÁFORO OPERATIVO — veredicto de un vistazo (siempre visible) -->
+    <div class="transition-theme" style="{{ semStyle }}">
+      <div style="display:flex; align-items:center; gap:16px; flex:1; min-width:0">
+        <div style="{{ semIconWrap }}">
+          <span style="font-size:24px; line-height:1; font-weight:700">{{ semIcon }}</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:5px; min-width:0">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+            <span style="font-size:22px; font-weight:700; letter-spacing:-0.02em; color:{{ semColor }}; line-height:1.1">{{ semVerb }}</span>
+            <span style="font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; padding:3px 8px; border-radius:5px; background:{{ semColor }}; color:#0b0d10">{{ semTag }}</span>
+          </div>
+          <span style="font-size:13.5px; font-weight:500; color:var(--text); text-wrap:pretty">{{ semMessage }}</span>
+          <sc-if value="{{ semHasReason }}" hint-placeholder-val="{{ true }}">
+            <span style="font-size:12px; color:var(--dim); text-wrap:pretty">{{ semReason }}</span>
+          </sc-if>
         </div>
       </div>
-    </sc-if>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0">
+        <span style="font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint)">margen usado</span>
+        <span style="font-family:'Geist Mono',monospace; font-size:26px; font-weight:700; color:{{ semColor }}; line-height:1">{{ semPeak }}</span>
+        <span style="font-size:10.5px; color:var(--faint)">pico 5h / 7d</span>
+      </div>
+    </div>
 
     <!-- HERO: official limit windows -->
     <div style="display:flex; flex-direction:column; gap:9px">
@@ -997,24 +1010,58 @@ class Component extends DCLogic {
       });
     }
 
-    const showBanner = (status === 'red' || status === 'critical') || 
-                       recommendations.some(r => r.id === 'alert-inactivity' || r.id === 'alert-high-burn');
-    const activeBannerRec = recommendations.find(r => r.id === 'alert-inactivity' || r.id === 'alert-high-burn') || recommendations[0];
-    const top = activeBannerRec || { message: '', reason: '' };
+    // ---- Semáforo operativo: veredicto de un vistazo ----
+    // `status` lo deriva el backend (peak = max de las dos ventanas oficiales; sin
+    // datos de rate_limits => critical). Aquí NO se inventa nada: si el estado es
+    // crítico pero no hay datos oficiales confiables, se muestra "—" y un
+    // tratamiento visual distinto (borde punteado, tono neutro) al de "límite
+    // alcanzado" (rojo sólido con pulso).
+    const NODATA = '#94a3b8';
+    const peak = Math.max(Math.round(d.five.used || 0), Math.round(d.seven.used || 0));
+    const windowsOfficial = (d.five.quality === 'official') && (d.seven.quality === 'official');
+    const noReliableData = status === 'critical' && (peak < 95 || !windowsOfficial);
+    const limitReached = status === 'critical' && !noReliableData;
 
-    let scBanner = sc;
-    let stTintBanner = stTint;
-    let bannerTagVal = status === 'critical' ? 'CRÍTICO' : 'AVISO';
-    if (top.id === 'alert-inactivity') {
-      scBanner = '#ef4444';
-      stTintBanner = 'rgba(239, 68, 68, 0.12)';
-      bannerTagVal = 'INACTIVO';
-    } else if (top.id === 'alert-high-burn') {
-      scBanner = '#f59e0b';
-      stTintBanner = 'rgba(245, 158, 11, 0.12)';
-      bannerTagVal = 'AVISO';
+    const topRec = recommendations[0] || null;
+
+    let sem;
+    if (status === 'critical' && noReliableData) {
+      sem = { verb: 'Sin datos confiables', tag: 'Sin datos', icon: '?', color: NODATA,
+              msg: 'No hay datos de rate_limits: no se puede evaluar tu margen operativo.',
+              reason: 'Actualiza Claude Code a v1.2.80+ o revisa el hook del statusline (no se inventan valores).' };
+    } else if (status === 'critical') {
+      sem = { verb: 'Detente', tag: 'Límite alcanzado', icon: '■', color: statusColors.critical,
+              msg: 'Límite alcanzado: la ventana oficial está al máximo.',
+              reason: 'Pausa el trabajo intensivo hasta el próximo reset de la ventana.' };
+    } else if (status === 'red') {
+      sem = { verb: 'Reduce el ritmo', tag: 'Alto', icon: '❗', color: statusColors.red,
+              msg: 'Uso alto: queda poco margen. Reduce contexto o divide la tarea.', reason: '' };
+    } else if (status === 'yellow') {
+      sem = { verb: 'Con precaución', tag: 'Advertencia', icon: '▲', color: statusColors.yellow,
+              msg: 'Uso medio. Vigila el consumo y evita tareas pesadas innecesarias.', reason: '' };
+    } else {
+      sem = { verb: 'Continúa', tag: 'Normal', icon: '✓', color: statusColors.green,
+              msg: 'Uso bajo. Sigue trabajando con normalidad.', reason: '' };
     }
-    const bannerStyle = `display:flex; align-items:flex-start; gap:14px; padding:14px 18px; border-radius:12px; background:var(--status-tint,${stTintBanner}); border:1px solid ${scBanner}; ${status === 'critical' || top.id === 'alert-inactivity' ? 'animation:ao-pulse 1.8s ease-in-out infinite;' : ''}`;
+
+    // Alertas operativas (inactividad / gasto) mandan sobre el tono visual del hero.
+    if (topRec && topRec.id === 'alert-inactivity') {
+      sem = { ...sem, verb: 'Sesión inactiva', tag: 'Inactivo', icon: '⏸', color: '#ef4444' };
+    } else if (topRec && topRec.id === 'alert-high-burn') {
+      sem = { ...sem, verb: 'Gasto elevado', tag: 'Aviso', icon: '⚠', color: '#f59e0b' };
+    }
+
+    // La recomendación #1 es el titular; si no hay, cae al texto derivado del estado.
+    const semMessage = (topRec && topRec.message) || sem.msg;
+    const semReason = (topRec && topRec.reason) || sem.reason || '';
+
+    const semAlarm = limitReached || (topRec && topRec.id === 'alert-inactivity');
+    const semBorder = noReliableData ? `2px dashed ${sem.color}` : `1px solid ${sem.color}`;
+    const semStyle = `display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; padding:18px 22px; border-radius:14px; background:color-mix(in srgb, ${sem.color} 12%, var(--panel)); border:${semBorder}; border-left:6px solid ${sem.color}; box-shadow:var(--shadow); --status:${sem.color}; ${semAlarm ? 'animation:ao-pulse 1.8s ease-in-out infinite;' : ''}`;
+    const semIconWrap = noReliableData
+      ? `display:flex; align-items:center; justify-content:center; width:46px; height:46px; border-radius:12px; background:transparent; border:2px dashed ${sem.color}; color:${sem.color}; flex-shrink:0`
+      : `display:flex; align-items:center; justify-content:center; width:46px; height:46px; border-radius:12px; background:${sem.color}; color:#0b0d10; flex-shrink:0`;
+    const semPeak = noReliableData ? '—' : peak + '%';
 
     const contextBar = d.context >= 85 ? '#f85149' : d.context >= 60 ? '#d8a01a' : '#5b9bff';
     const usedCtxTokens = Math.round(d.contextWindow * d.context / 100);
@@ -1159,11 +1206,16 @@ class Component extends DCLogic {
       statusColor: sc,
       statusLabel: statusLabels[status] || 'Estado: —',
       snapshotIso: d.snapshotIso || '—',
-      showBanner,
-      bannerStyle,
-      bannerTag: bannerTagVal,
-      bannerText: top.message,
-      bannerReason: top.reason,
+      semStyle,
+      semIconWrap,
+      semIcon: sem.icon,
+      semVerb: sem.verb,
+      semTag: sem.tag,
+      semColor: sem.color,
+      semMessage,
+      semReason,
+      semHasReason: !!semReason,
+      semPeak,
       ringC: C,
       fiveUsed: Math.round(d.five.used), fiveRemaining: Math.round(100 - d.five.used), fiveOffset, fiveReset: d.five.reset,
       sevenUsed: Math.round(d.seven.used), sevenRemaining: Math.round(100 - d.seven.used), sevenOffset, sevenReset: d.seven.reset,

@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import copy
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from app.db import init_db
 from app.main import app
+from app.services.sessions import get_large_files
 
 client = TestClient(app)
 
@@ -79,3 +81,53 @@ def test_patch_sesion_inexistente_da_404() -> None:
     init_db()
     r = client.patch("/api/sessions/no-existe", json={"objective": "x"})
     assert r.status_code == 404
+
+
+def test_anotaciones_sobreviven_a_nuevos_snapshots(raw_statusline: dict) -> None:
+    """Las métricas ``manual`` no deben pisarse cuando llega otro tick ``captured``.
+
+    Regresión del flujo real: el usuario anota objetivo/tipo y luego el statusline
+    sigue emitiendo snapshots de la misma sesión; la anotación tiene que persistir.
+    """
+    init_db()
+    client.post("/api/snapshots", json=raw_statusline)
+    sid = raw_statusline["session_id"]
+
+    client.patch(
+        f"/api/sessions/{sid}",
+        json={"objective": "Documentar el enrolamiento", "task_type": "documentación"},
+    )
+
+    # Nuevo tick de la MISMA sesión (cambia el costo para no deduplicar).
+    otro = copy.deepcopy(raw_statusline)
+    otro["cost"]["total_cost_usd"] = raw_statusline["cost"]["total_cost_usd"] + 1.5
+    client.post("/api/snapshots", json=otro)
+
+    cs = client.get("/api/dashboard").json()["current_session"]
+    assert cs["objective"] == "Documentar el enrolamiento"
+    assert cs["task_type"] == "documentación"
+
+    current = client.get("/api/sessions/current").json()
+    assert current["objective"] == "Documentar el enrolamiento"
+    assert current["task_type"] == "documentación"
+
+
+def test_large_files_excluye_ruido_de_build(tmp_path: Path) -> None:
+    """``get_large_files`` debe listar archivos del trabajo, no artefactos de build."""
+    # Artefacto pesado que NO debe aparecer.
+    cache_dir = tmp_path / ".mypy_cache" / "3.11"
+    cache_dir.mkdir(parents=True)
+    (cache_dir / "cache.db").write_bytes(b"\0" * 2_000_000)
+    # WAL de la base SQLite: excluido por sufijo aunque no esté en data/.
+    (tmp_path / "local.db-wal").write_bytes(b"\0" * 1_500_000)
+    # Archivo real del usuario (pequeño) que SÍ debe aparecer.
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "main.py").write_bytes(b"x" * 1024)
+
+    files = get_large_files(str(tmp_path), limit=5)
+    paths = {f["path"] for f in files}
+
+    assert any(p.endswith("main.py") for p in paths)
+    assert not any("mypy_cache" in p for p in paths)
+    assert not any(p.endswith(".db-wal") for p in paths)

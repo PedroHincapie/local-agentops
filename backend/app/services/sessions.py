@@ -139,7 +139,11 @@ def current_session(db: Session) -> AgentSession | None:
     snap = _latest_snapshot(db, active)
     if snap is not None:
         now = datetime.now(UTC)
-        captured_at = snap.captured_at if snap.captured_at.tzinfo else snap.captured_at.replace(tzinfo=UTC)
+        captured_at = (
+            snap.captured_at
+            if snap.captured_at.tzinfo
+            else snap.captured_at.replace(tzinfo=UTC)
+        )
         if (now - captured_at).total_seconds() > 7200:
             active.status = "closed"
             active.ended_at = snap.captured_at
@@ -203,29 +207,52 @@ def build_session_view(db: Session, agent_session: AgentSession) -> dict[str, An
     }
 
 
+# Ruido de build/entorno: NO son "archivos del trabajo" del usuario, así que se
+# excluyen del escaneo de archivos pesados (código/docs es lo que interesa).
+_LARGE_FILES_EXCLUDE_DIRS = {
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".pytest_cache",
+    "node_modules",
+    "dist",
+    "build",
+    "data",  # base SQLite local (WAL/SHM)
+    ".claude",
+}
+_LARGE_FILES_EXCLUDE_SUFFIXES = (".db", ".db-wal", ".db-shm", ".pyc")
+
+
 def get_large_files(directory_path: str | None, limit: int = 5) -> list[dict[str, Any]]:
     import os
+
     if not directory_path or not os.path.isdir(directory_path):
         return []
 
-    file_list = []
-    exclude_dirs = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", ".claude"}
-
+    file_list: list[dict[str, Any]] = []
     try:
         for root, dirs, files in os.walk(directory_path):
-            dirs[:] = [d for d in dirs if d not in exclude_dirs]
+            # Poda in-place: no descender en directorios de build/entorno.
+            dirs[:] = [d for d in dirs if d not in _LARGE_FILES_EXCLUDE_DIRS]
             for file in files:
+                if file.endswith(_LARGE_FILES_EXCLUDE_SUFFIXES):
+                    continue
                 filepath = os.path.join(root, file)
                 try:
                     if os.path.islink(filepath):
                         continue
                     size = os.path.getsize(filepath)
                     rel_path = os.path.relpath(filepath, directory_path)
-                    file_list.append({
-                        "path": rel_path,
-                        "size_bytes": size,
-                        "size_kb": round(size / 1024, 1)
-                    })
+                    file_list.append(
+                        {
+                            "path": rel_path,
+                            "size_bytes": size,
+                            "size_kb": round(size / 1024, 1),
+                        }
+                    )
                 except OSError:
                     continue
     except Exception:

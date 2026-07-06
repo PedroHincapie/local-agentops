@@ -32,7 +32,7 @@ async def post_snapshot(
         from app.services.websocket import manager
         db_data = build_dashboard(session)
         await manager.broadcast(db_data)
-    except Exception as err:
+    except Exception:
         # Fallback silencioso para no bloquear la ingesta si falla la transmisión
         pass
 
