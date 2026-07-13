@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend gates (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Los tests no arrancan el scheduler real (no invoca ccusage en background).
+      AGENTOPS_SCHEDULER_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install
+        run: pip install -e '.[dev]'
+
+      - name: Ruff (lint)
+        run: ruff check app tests
+
+      - name: Mypy (types)
+        run: mypy app
+
+      - name: Pytest
+        run: python -m pytest -q
