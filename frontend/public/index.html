@@ -213,7 +213,7 @@
           <div style="width:26px; height:26px; border-radius:7px; background:var(--status); display:flex; align-items:center; justify-content:center; color:#0b0d10; font-weight:700; font-size:13px; font-family:'Geist Mono',monospace">A</div>
           <div style="display:flex; flex-direction:column; line-height:1.15">
             <span style="font-size:15px; font-weight:600">{{ projectName }}</span>
-            <span style="font-size:11.5px; color:var(--faint)">Local AgentOps · Claude Code</span>
+            <span style="font-size:11.5px; color:var(--faint)">{{ headerSubtitle }}</span>
           </div>
         </div>
         <div class="transition-theme" style="height:22px; width:1px; background:var(--border)"></div>
@@ -319,6 +319,82 @@
         </div>
       </div>
     </div>
+
+    <!-- PROVEEDORES: margen por cuenta, lado a lado (multi-provider) -->
+    <sc-if value="{{ showProviders }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; flex-direction:column; gap:9px">
+        <div style="display:flex; align-items:baseline; gap:9px">
+          <span style="font-size:12px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--dim); white-space:nowrap">Proveedores</span>
+          <span style="font-size:11.5px; color:var(--faint)">margen por cuenta · métricas nativas, lado a lado</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px">
+          <sc-for list="{{ providersList }}" as="p" hint-placeholder-count="2">
+            <div class="dashboard-card transition-theme" style="padding:16px 18px; display:flex; flex-direction:column; gap:12px; border-left:3px solid {{ p.color }}; --hover-glow:{{ p.tint }}; --hover-glow-border:{{ p.color }};">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
+                <span style="width:9px; height:9px; border-radius:50%; background:{{ p.color }}; flex-shrink:0"></span>
+                <span style="font-size:14px; font-weight:700">{{ p.label }}</span>
+                <sc-if value="{{ p.isActive }}" hint-placeholder-val="{{ true }}">
+                  <span class="transition-theme" style="font-size:9px; font-weight:700; letter-spacing:0.08em; padding:2px 6px; border-radius:4px; background:var(--panel2); color:var(--dim); border:1px solid var(--border)">ACTIVO</span>
+                </sc-if>
+                <sc-if value="{{ p.isRecommended }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:9px; font-weight:700; letter-spacing:0.08em; padding:2px 6px; border-radius:4px; background:rgba(63,185,80,0.14); color:#3fb950; border:1px solid #3fb950">RECOMENDADO ⇄</span>
+                </sc-if>
+                <span style="margin-left:auto; font-size:11px; font-weight:600; color:{{ p.color }}">{{ p.statusLabel }}</span>
+              </div>
+
+              <!-- ventana 5h -->
+              <div style="display:flex; flex-direction:column; gap:4px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:11px; color:var(--faint)">Ventana 5h</span>
+                  <sc-if value="{{ p.fiveHas }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--dim)">reset {{ p.fiveReset }}</span>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ p.fiveHas }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex; align-items:baseline; gap:8px">
+                    <span style="font-family:'Geist Mono',monospace; font-size:19px; font-weight:600; color:var(--text)">{{ p.fiveUsed }}<span style="font-size:11px; color:var(--dim)">% usado</span></span>
+                    <span style="font-size:11px; color:{{ p.fiveColor }}">queda {{ p.fiveRemaining }}%</span>
+                  </div>
+                  <div style="height:5px; border-radius:3px; background:var(--track); overflow:hidden">
+                    <div style="height:100%; border-radius:3px; background:{{ p.fiveColor }}; width:{{ p.fiveUsed }}%"></div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ p.fiveMissing }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:12px; color:var(--faint)">sin datos</span>
+                </sc-if>
+              </div>
+
+              <!-- ventana 7d -->
+              <div style="display:flex; flex-direction:column; gap:4px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:11px; color:var(--faint)">Ventana 7d</span>
+                  <sc-if value="{{ p.sevenHas }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--dim)">reset {{ p.sevenReset }}</span>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ p.sevenHas }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex; align-items:baseline; gap:8px">
+                    <span style="font-family:'Geist Mono',monospace; font-size:19px; font-weight:600; color:var(--text)">{{ p.sevenUsed }}<span style="font-size:11px; color:var(--dim)">% usado</span></span>
+                    <span style="font-size:11px; color:{{ p.sevenColor }}">queda {{ p.sevenRemaining }}%</span>
+                  </div>
+                  <div style="height:5px; border-radius:3px; background:var(--track); overflow:hidden">
+                    <div style="height:100%; border-radius:3px; background:{{ p.sevenColor }}; width:{{ p.sevenUsed }}%"></div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ p.sevenMissing }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:12px; color:var(--faint)">sin datos</span>
+                </sc-if>
+              </div>
+
+              <div style="display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--border); padding-top:9px">
+                <span style="font-size:10.5px; color:var(--faint); text-transform:uppercase; letter-spacing:0.06em">modelo</span>
+                <span style="font-family:'Geist Mono',monospace; font-size:11.5px; color:var(--dim)">{{ p.model }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
 
     <!-- secondary metrics -->
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px">
@@ -563,6 +639,16 @@ class Component extends DCLogic {
       seven_day: { used_percentage: 7, resets_in_human: '5d 17h', data_quality: 'official' },
     },
     last_snapshot_at: '2026-06-27T13:45:00Z',
+    active_provider: 'claude',
+    recommended_provider: 'claude',
+    providers: [
+      { provider: 'claude', status: 'green', model_name: 'Opus 4.8',
+        five_hour: { used_percentage: 45, resets_in_human: '3h 14m', data_quality: 'official' },
+        seven_day: { used_percentage: 7, resets_in_human: '5d 17h', data_quality: 'official' } },
+      { provider: 'codex', status: 'red', model_name: 'gpt-5.5',
+        five_hour: { used_percentage: 88, resets_in_human: '1h 40m', data_quality: 'official' },
+        seven_day: { used_percentage: 32, resets_in_human: '6d 2h', data_quality: 'official' } },
+    ],
     recommendations: [{ recommendation_type: 'continue', severity: 'info', message: 'Uso bajo. Continúa trabajando con normalidad.', reason: 'Ventana de 5h al 45%, 7d al 7%.' }],
   };
 
@@ -872,7 +958,7 @@ class Component extends DCLogic {
           in: tk.total_input_tokens ?? 0, out: tk.total_output_tokens ?? 0,
           cc: tk.cache_creation_input_tokens ?? 0, cr: tk.cache_read_input_tokens ?? 0,
         },
-        recs: (j.recommendations || []).map(r => ({ id: r.id, type: r.severity || 'info', message: r.message || '', reason: r.reason || '' })),
+        recs: (j.recommendations || []).map(r => ({ id: r.id, type: r.severity || 'info', recType: r.recommendation_type || '', message: r.message || '', reason: r.reason || '' })),
         session: {
           name: cs.session_name || '—', project: cs.project_name || '—', path: cs.project_path || '—',
           model: cs.model_name || m.model_name || '—', branch: cs.git_branch || '—',
@@ -961,6 +1047,47 @@ class Component extends DCLogic {
     const fiveColor = statusColors[fiveColorName] || statusColors.green;
     const sevenColor = statusColors[sevenColorName] || statusColors.green;
 
+    // ---- Proveedores: métricas nativas lado a lado (multi-provider) ----
+    const provLabels = { claude: 'Claude', codex: 'Codex', gemini: 'Gemini' };
+    const activeProv = j && j.active_provider;
+    const recProv = j && j.recommended_provider;
+    const mkWin = (win, fallbackColor) => {
+      const pct = win && win.used_percentage;
+      if (pct === null || pct === undefined) {
+        return { has: false, missing: true, used: 0, remaining: 0, reset: '—', color: fallbackColor };
+      }
+      const u = Math.round(pct);
+      return {
+        has: true, missing: false, used: u, remaining: Math.max(0, 100 - u),
+        reset: (win && win.resets_in_human) || '—',
+        color: statusColors[getUsageColorName(pct)] || fallbackColor,
+      };
+    };
+    const providersList = ((j && j.providers) || []).map(p => {
+      const pstatus = p.status || 'green';
+      const pcolor = statusColors[pstatus] || statusColors.green;
+      const five = mkWin(p.five_hour, pcolor);
+      const seven = mkWin(p.seven_day, pcolor);
+      return {
+        key: p.provider,
+        label: provLabels[p.provider] || p.provider,
+        color: pcolor,
+        tint: (tintMap[pstatus] || tintMap.green),
+        statusLabel: (statusLabels[pstatus] || 'Estado: —').replace('Estado: ', ''),
+        isActive: p.provider === activeProv,
+        isRecommended: !!recProv && p.provider === recProv && p.provider !== activeProv,
+        model: p.model_name || '—',
+        fiveHas: five.has, fiveMissing: five.missing, fiveUsed: five.used,
+        fiveRemaining: five.remaining, fiveReset: five.reset, fiveColor: five.color,
+        sevenHas: seven.has, sevenMissing: seven.missing, sevenUsed: seven.used,
+        sevenRemaining: seven.remaining, sevenReset: seven.reset, sevenColor: seven.color,
+      };
+    });
+    const activeProviderLabel = provLabels[activeProv] || null;
+    const headerSubtitle = providersList.length > 1
+      ? `Local AgentOps · ${providersList.length} proveedores`
+      : (activeProviderLabel ? `Local AgentOps · ${activeProviderLabel}` : 'Local AgentOps · Claude Code');
+
     // tokens
     const tk = d.tok;
     const regularInput = Math.max(0, tk.in - tk.cc - tk.cr);
@@ -979,12 +1106,17 @@ class Component extends DCLogic {
     const ackRec = (id) => this.ackRecommendation(id);
     const recommendations = d.recs
       .filter(r => r.id && !dismissed.includes(r.id))
-      .map(r => ({
-        id: r.id,
-        message: r.message, reason: r.reason,
-        color: sevColors[r.type] || sevColors.info, label: sevLabels[r.type] || 'INFO', tint: sevTint[r.type] || sevTint.info,
-        ack: () => ackRec(r.id)
-      }));
+      .map(r => {
+        const isSwitch = r.recType === 'switch_provider';
+        return {
+          id: r.id,
+          message: r.message, reason: r.reason,
+          color: isSwitch ? '#3fb950' : (sevColors[r.type] || sevColors.info),
+          label: isSwitch ? 'CAMBIA DE PROVEEDOR ⇄' : (sevLabels[r.type] || 'INFO'),
+          tint: isSwitch ? 'rgba(63,185,80,0.14)' : (sevTint[r.type] || sevTint.info),
+          ack: () => ackRec(r.id)
+        };
+      });
 
     if (!hasActiveSession && !dismissed.includes('alert-inactivity')) {
       recommendations.unshift({
@@ -1203,6 +1335,9 @@ class Component extends DCLogic {
       themeGlyph: S.theme === 'dark' ? '◐' : '○',
       projectName: d.session.project,
       modelName: d.session.model,
+      headerSubtitle,
+      providersList,
+      showProviders: providersList.length > 0,
       statusColor: sc,
       statusLabel: statusLabels[status] || 'Estado: —',
       snapshotIso: d.snapshotIso || '—',
