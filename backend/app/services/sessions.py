@@ -16,6 +16,7 @@ from typing import Any
 
 from sqlmodel import Session, func, select
 
+from app.config import settings
 from app.models import AgentSession, Project, UsageSnapshot, Workday
 
 # Cache de rama por ruta de proyecto: evita invocar git en cada tick.
@@ -125,6 +126,43 @@ def _close_active_sessions(db: Session, workday_id: str, keep_external_id: str) 
         db.add(s)
 
 
+def _idle_seconds(snap: UsageSnapshot | None, now: datetime) -> float | None:
+    """Segundos desde el último snapshot de la sesión, o None si no hay snapshot."""
+    if snap is None:
+        return None
+    captured_at = (
+        snap.captured_at
+        if snap.captured_at.tzinfo
+        else snap.captured_at.replace(tzinfo=UTC)
+    )
+    return (now - captured_at).total_seconds()
+
+
+def close_idle_sessions(db: Session, now: datetime | None = None) -> int:
+    """Cierra TODAS las sesiones activas sin snapshots recientes. Devuelve cuántas cerró.
+
+    Barrido proactivo: lo invoca el reconciliador cada N min para que las sesiones se
+    cierren aunque nadie consulte ``/api/sessions/current`` (el front no lo hace).
+    """
+    now = now or datetime.now(UTC)
+    threshold = settings.session_idle_minutes * 60
+    actives = db.exec(
+        select(AgentSession).where(AgentSession.status == "active")
+    ).all()
+    closed = 0
+    for s in actives:
+        snap = _latest_snapshot(db, s)
+        idle = _idle_seconds(snap, now)
+        if idle is not None and idle > threshold:
+            s.status = "closed"
+            s.ended_at = snap.captured_at  # type: ignore[union-attr]  # snap no es None si idle no es None
+            db.add(s)
+            closed += 1
+    if closed:
+        db.commit()
+    return closed
+
+
 def current_session(db: Session) -> AgentSession | None:
     """Sesión activa más reciente (la de los últimos snapshots)."""
     active = db.exec(
@@ -135,21 +173,15 @@ def current_session(db: Session) -> AgentSession | None:
     if active is None:
         return None
 
-    # Cerrar automáticamente si no hay actividad en los últimos 120 minutos
+    # Cierre perezoso: si no hay actividad en el umbral configurado, cerrar y no devolverla.
     snap = _latest_snapshot(db, active)
-    if snap is not None:
-        now = datetime.now(UTC)
-        captured_at = (
-            snap.captured_at
-            if snap.captured_at.tzinfo
-            else snap.captured_at.replace(tzinfo=UTC)
-        )
-        if (now - captured_at).total_seconds() > 7200:
-            active.status = "closed"
-            active.ended_at = snap.captured_at
-            db.add(active)
-            db.commit()
-            return None
+    idle = _idle_seconds(snap, datetime.now(UTC))
+    if idle is not None and idle > settings.session_idle_minutes * 60:
+        active.status = "closed"
+        active.ended_at = snap.captured_at  # type: ignore[union-attr]  # snap no es None si idle no es None
+        db.add(active)
+        db.commit()
+        return None
 
     return active
 

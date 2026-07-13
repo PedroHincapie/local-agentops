@@ -19,6 +19,7 @@ from app.capture.ccusage import CcusageSource
 from app.db import engine
 from app.models import UsageSnapshot, Workday
 from app.services.reconciler_state import state
+from app.services.sessions import close_idle_sessions
 
 # Campos que definen el contenido de un tick ccusage (para deduplicar).
 _HASH_KEYS = (
@@ -53,10 +54,18 @@ def reconcile_once(source: CaptureSource | None = None) -> dict[str, Any]:
     """Una pasada de reconciliación. Devuelve un resumen (útil para logs/tests)."""
     src = source or CcusageSource()
     with Session(engine) as db:
+        # Barrido proactivo: cierra sesiones inactivas aunque nadie consulte
+        # /api/sessions/current (independiente de que haya jornada activa).
+        idle_closed = close_idle_sessions(db)
+
         workday = _active_workday(db)
         if workday is None:
             # Sin actividad del día: nada que reconciliar.
-            return {"reconciled": False, "reason": "sin jornada activa"}
+            return {
+                "reconciled": False,
+                "reason": "sin jornada activa",
+                "idle_sessions_closed": idle_closed,
+            }
 
         try:
             fields = src.fetch()

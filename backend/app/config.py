@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     threshold_critical: float = 95
 
     reconcile_interval_seconds: int = 300
+    # Cierre auto de sesión: si la sesión activa no recibe snapshots por más de este
+    # tiempo, se marca ``closed`` (barrido proactivo en el reconciliador + chequeo perezoso).
+    session_idle_minutes: int = 120
     scheduler_enabled: bool = True  # tests/CI pueden apagarlo (AGENTOPS_SCHEDULER_ENABLED=false)
     frontend_dist: str = "../frontend/public"  # deliverable estático servido en /
 
