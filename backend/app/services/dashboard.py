@@ -12,6 +12,12 @@ from typing import Any
 from sqlmodel import Session, select
 
 from app.models import AgentSession, Project, UsageSnapshot, Workday
+from app.services.providers import (
+    latest_active_snapshot,
+    latest_primary_snapshot,
+    provider_margin,
+    providers_with_data,
+)
 from app.services.recommendations import active_recommendations, view_brief
 from app.services.sessions import current_session
 from app.services.status import derive_status
@@ -66,17 +72,16 @@ def build_dashboard(session: Session) -> dict[str, Any]:
         .where(Workday.status == "active")
         .order_by(Workday.date.desc())  # type: ignore[attr-defined]
     ).first()
-    # Feed oficial en vivo: el último snapshot del statusline. Los ticks de ccusage
-    # (reconciliación, sin rate_limits) no deben degradar status ni ventanas.
-    snap = session.exec(
-        select(UsageSnapshot)
-        .where(UsageSnapshot.source_name == "statusline")
-        .order_by(UsageSnapshot.captured_at.desc())  # type: ignore[attr-defined]
-    ).first()
+    # Feed en vivo del proveedor ACTIVO: el último snapshot primario entre todos los
+    # proveedores (statusline/codex_rollout/gemini_otel). Los ticks de reconciliación
+    # (ccusage, sin rate_limits) no son primarios y no degradan status ni ventanas.
+    snap = latest_active_snapshot(session)
     # last_snapshot_at refleja CUALQUIER fuente (incluida la reconciliación ccusage).
     last_any = session.exec(
         select(UsageSnapshot).order_by(UsageSnapshot.captured_at.desc())  # type: ignore[attr-defined]
     ).first()
+
+    providers, recommended = _providers_view(session, now)
 
     if snap is None:
         return {
@@ -85,6 +90,9 @@ def build_dashboard(session: Session) -> dict[str, Any]:
             "workday": _workday_view(workday),
             "current_session": None,
             "metrics": None,
+            "providers": providers,
+            "active_provider": None,
+            "recommended_provider": recommended,
             "last_snapshot_at": _isoformat(last_any.captured_at) if last_any else None,
             "recommendations": [],
         }
@@ -95,6 +103,9 @@ def build_dashboard(session: Session) -> dict[str, Any]:
         "generated_at": _isoformat(now),
         "status": status,
         "workday": _workday_view(workday),
+        "active_provider": snap.provider,
+        "recommended_provider": recommended,
+        "providers": providers,
         "current_session": _current_session_view(session, snap, agent_session),
         "metrics": {
             "model_name": snap.model_name,
@@ -166,6 +177,46 @@ def _workday_view(workday: Workday | None) -> dict[str, Any] | None:
         "initial_state": workday.initial_state,
         "current_state": workday.current_state,
     }
+
+
+def _provider_entry(snap: UsageSnapshot, now: datetime) -> dict[str, Any]:
+    """Entrada de ``providers[]``: métricas NATIVAS del proveedor (lado a lado)."""
+    return {
+        "provider": snap.provider,
+        "status": derive_status(
+            snap.rate_limit_5h_percentage, snap.rate_limit_7d_percentage
+        ),
+        "model_name": snap.model_name,
+        "five_hour": _window(
+            snap.rate_limit_5h_percentage, snap.rate_limit_5h_resets_at, now
+        ),
+        "seven_day": _window(
+            snap.rate_limit_7d_percentage, snap.rate_limit_7d_resets_at, now
+        ),
+        "last_snapshot_at": _isoformat(snap.captured_at),
+        "data_quality": snap.data_quality,
+    }
+
+
+def _providers_view(
+    session: Session, now: datetime
+) -> tuple[list[dict[str, Any]], str | None]:
+    """Construye ``providers[]`` y elige ``recommended_provider`` (mayor margen).
+
+    El ranking usa un margen normalizado INTERNO; la UI muestra métricas nativas.
+    """
+    entries: list[dict[str, Any]] = []
+    best_provider: str | None = None
+    best_margin: float | None = None
+    for provider in providers_with_data(session):
+        snap = latest_primary_snapshot(session, provider)
+        if snap is None:
+            continue
+        entries.append(_provider_entry(snap, now))
+        margin = provider_margin(snap)
+        if margin is not None and (best_margin is None or margin > best_margin):
+            best_margin, best_provider = margin, provider
+    return entries, best_provider
 
 
 def _basename(path: str | None) -> str | None:

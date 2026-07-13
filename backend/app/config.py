@@ -33,6 +33,16 @@ class Settings(BaseSettings):
     # Cierre auto de sesión: si la sesión activa no recibe snapshots por más de este
     # tiempo, se marca ``closed`` (barrido proactivo en el reconciliador + chequeo perezoso).
     session_idle_minutes: int = 120
+
+    # --- Fuentes multi-provider (pull). Deshabilitadas por defecto: se activan cuando
+    # el usuario usa esos CLIs. Claude no necesita flag (statusline hook + ccusage). ---
+    codex_enabled: bool = False
+    codex_sessions_dir: str = "~/.codex/sessions"
+    gemini_enabled: bool = False
+    gemini_telemetry_log: str = "~/.gemini/telemetry.log"
+    # Cuota del tier de Gemini (RPD/TPM): margen ESTIMADO. 0 = desconocida (no se estima).
+    gemini_rpd: int = 0
+    gemini_tpm: int = 0
     scheduler_enabled: bool = True  # tests/CI pueden apagarlo (AGENTOPS_SCHEDULER_ENABLED=false)
     frontend_dist: str = "../frontend/public"  # deliverable estático servido en /
 
