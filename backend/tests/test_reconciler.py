@@ -18,6 +18,8 @@ class _FakeSource:
     """CaptureSource de prueba: devuelve campos fijos o lanza un error."""
 
     name = "ccusage"
+    provider = "claude"
+    source_name = "ccusage"
 
     def __init__(self, fields: dict[str, Any] | None = None, error: Exception | None = None):
         self._fields = fields

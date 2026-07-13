@@ -40,6 +40,8 @@ def _default_runner(args: list[str]) -> str:
 
 class CcusageSource:
     name = "ccusage"
+    provider = "claude"
+    source_name = "ccusage"
 
     def __init__(
         self,

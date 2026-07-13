@@ -16,18 +16,23 @@ from sqlmodel import Session, select
 
 from app.capture.base import CaptureError, CaptureSource
 from app.capture.ccusage import CcusageSource
+from app.capture.codex import CodexSource
+from app.config import settings
 from app.db import engine
 from app.models import UsageSnapshot, Workday
 from app.services.reconciler_state import state
 from app.services.sessions import close_idle_sessions
 
-# Campos que definen el contenido de un tick ccusage (para deduplicar).
+# Campos que definen el contenido de un tick pull (para deduplicar). Incluye las
+# ventanas: para Codex un cambio de margen (sin cambio de tokens) SÍ es un tick nuevo.
 _HASH_KEYS = (
     "cost_session_usd",
     "total_input_tokens",
     "total_output_tokens",
     "cache_creation_input_tokens",
     "cache_read_input_tokens",
+    "rate_limit_5h_percentage",
+    "rate_limit_7d_percentage",
 )
 
 
@@ -80,7 +85,7 @@ def reconcile_once(source: CaptureSource | None = None) -> dict[str, Any]:
         content_hash = _content_hash(fields)
         last = db.exec(
             select(UsageSnapshot)
-            .where(UsageSnapshot.source_name == "ccusage")
+            .where(UsageSnapshot.source_name == src.source_name)
             .order_by(UsageSnapshot.captured_at.desc())  # type: ignore[attr-defined]
         ).first()
         if last is not None and last.content_hash == content_hash:
@@ -90,8 +95,9 @@ def reconcile_once(source: CaptureSource | None = None) -> dict[str, Any]:
         snapshot = UsageSnapshot(
             workday_id=workday.id,
             captured_at=datetime.now(UTC),
+            provider=src.provider,
             source_type="captured",
-            source_name="ccusage",
+            source_name=src.source_name,
             content_hash=content_hash,
             **fields,
         )
@@ -100,3 +106,17 @@ def reconcile_once(source: CaptureSource | None = None) -> dict[str, Any]:
         db.refresh(snapshot)
         state.record_success()
         return {"reconciled": True, "snapshot_id": snapshot.id, "workday_id": workday.id}
+
+
+def enabled_sources() -> list[CaptureSource]:
+    """Fuentes pull activas. ccusage (Claude) siempre; Codex/Gemini según config."""
+    sources: list[CaptureSource] = [CcusageSource()]
+    if settings.codex_enabled:
+        sources.append(CodexSource())
+    # Gemini se añadirá aquí cuando su fuente aterrice (settings.gemini_enabled).
+    return sources
+
+
+def reconcile_all() -> list[dict[str, Any]]:
+    """Una pasada por cada fuente habilitada. Lo invoca el scheduler."""
+    return [reconcile_once(src) for src in enabled_sources()]

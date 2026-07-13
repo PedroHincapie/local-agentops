@@ -76,6 +76,8 @@ class _NoopSource:
     """Fuente de prueba que no aporta datos (evita invocar el ccusage real)."""
 
     name = "ccusage"
+    provider = "claude"
+    source_name = "ccusage"
 
     def fetch(self) -> None:
         return None

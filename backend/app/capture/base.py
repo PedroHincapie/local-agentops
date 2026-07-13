@@ -5,8 +5,11 @@ volatilidad de las fuentes (statusline, ccusage) sin reintroducir una capa de
 providers. Agregar o sustituir una fuente no debe tocar el dashboard (CLAUDE.md).
 
 ``fetch()`` devuelve un dict de campos normalizados de ``UsageSnapshot`` (los que
-la fuente puede aportar), o ``None`` si no hay datos. La clasificación de origen
-(``source_type`` / ``source_name``) la fija quien persiste, no la fuente.
+la fuente puede aportar), o ``None`` si no hay datos.
+
+Cada fuente declara su identidad multi-provider: ``provider`` (la cuenta: claude |
+codex | gemini) y ``source_name`` (el mecanismo: statusline | ccusage | codex_rollout
+| gemini_otel). Quien persiste usa esas dos etiquetas; la fuente no toca el dashboard.
 """
 from __future__ import annotations
 
@@ -24,6 +27,8 @@ class CaptureError(Exception):
 
 @runtime_checkable
 class CaptureSource(Protocol):
-    name: str
+    name: str  # id humano para logs
+    provider: str  # claude | codex | gemini
+    source_name: str  # statusline | ccusage | codex_rollout | gemini_otel
 
     def fetch(self) -> NormalizedFields | None: ...

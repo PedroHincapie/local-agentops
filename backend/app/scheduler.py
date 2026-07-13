@@ -11,7 +11,7 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.config import settings
-from app.services.reconciler import reconcile_once
+from app.services.reconciler import reconcile_all
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ _scheduler: BackgroundScheduler | None = None
 
 def _job() -> None:
     try:
-        reconcile_once()
+        reconcile_all()  # una pasada por cada fuente habilitada (ccusage, codex, ...)
     except Exception:  # red de seguridad: un fallo del job nunca debe matar el scheduler
         logger.exception("Fallo no controlado en la reconciliación")
 
