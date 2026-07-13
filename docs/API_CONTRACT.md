@@ -1,7 +1,7 @@
 # Local AgentOps — Contrato de la API local
 
 > Versión 0.1 del contrato. Derivado de datos **reales** capturados del statusline de Claude Code v2.1.195.
-> Este documento es el acuerdo estable entre el **backend** (FastAPI, construido por Claude Code) y el **frontend** (SPA, construida por Claude Design). Ambos pueden trabajar en paralelo contra este contrato.
+> Este documento es el acuerdo estable entre el **backend** (FastAPI) y el **frontend** (SPA estática en `frontend/public/`, servida por el backend en el mismo origen). El contrato manda: front y back se mantienen desacoplados a través de él.
 
 ---
 
@@ -192,6 +192,23 @@ Es el endpoint principal para Claude Design. Devuelve todo lo necesario para pin
 
 ---
 
+### 4.3.1 `GET /api/sessions/current/large-files` — archivos pesados del proyecto activo
+
+Métrica auxiliar del dashboard: escanea el directorio del proyecto de la sesión activa y devuelve los **5 archivos más grandes** (`data_quality: captured`, lectura del sistema de archivos local). Excluye directorios de build/entorno y binarios comunes; ignora symlinks. Si no hay sesión activa → `404`.
+
+**Response `200 OK`:**
+```json
+{
+  "files": [
+    { "path": "frontend/public/support.js", "size_bytes": 51200, "size_kb": 50.0 },
+    { "path": "README.md", "size_bytes": 9800, "size_kb": 9.6 }
+  ]
+}
+```
+`path` es relativo al directorio del proyecto; la lista viene ordenada por tamaño descendente (máx. 5) y es `[]` si el path no existe o no es legible.
+
+---
+
 ### 4.4 `PATCH /api/sessions/{id}` — anotar (métrica manual)
 
 Lo único que el usuario ingresa a mano.
@@ -299,6 +316,24 @@ Lo único que el usuario ingresa a mano.
 
 ---
 
+### 4.9 `WS /api/ws/dashboard` — push en tiempo real
+
+Canal WebSocket que empuja el estado del dashboard. **Al conectar**, el servidor envía de inmediato el payload inicial (misma forma que `GET /api/dashboard`, §4.2). Tras cada **mutación relevante** (nuevo snapshot aceptado, ack de recomendación, anotación de sesión) el backend hace `broadcast()` del estado fresco a todos los clientes conectados.
+
+Es una **optimización de push, no un contrato aparte**: la fuente de verdad sigue siendo la API REST. Un cliente puede ignorar el WebSocket y hacer polling de `GET /api/dashboard` sin perder funcionalidad.
+
+- **Handshake:** `ws(s)://<host>/api/ws/dashboard` (mismo origen; `wss` si el front se sirve por HTTPS).
+- **Mensajes del servidor:** JSON con la forma de §4.2.
+- **Mensajes del cliente:** ninguno requerido; el canal es unidireccional (solo push).
+
+---
+
+### 4.10 `GET /api/ping` — liveness
+
+Sonda de vida mínima. **Response `200 OK`:** `{ "status": "ok" }`.
+
+---
+
 ## 5. Resumen de endpoints
 
 | Método | Endpoint | Consumidor | Propósito |
@@ -306,12 +341,15 @@ Lo único que el usuario ingresa a mano.
 | `POST` | `/api/snapshots` | Hook | Ingesta cruda del statusline |
 | `GET` | `/api/dashboard` | Front | Vista consolidada |
 | `GET` | `/api/sessions/current` | Front | Sesión activa |
+| `GET` | `/api/sessions/current/large-files` | Front | Top-5 archivos pesados del proyecto |
 | `PATCH` | `/api/sessions/{id}` | Front | Anotar objetivo/tipo de tarea |
 | `GET` | `/api/usage/today` | Front | Acumulado del día |
 | `GET` | `/api/usage/history` | Front | Histórico |
 | `GET` | `/api/recommendations` | Front | Recomendaciones |
 | `POST` | `/api/recommendations/{id}/ack` | Front | Marcar vista |
 | `GET` | `/api/health` | Front/diagnóstico | Salud del sistema |
+| `GET` | `/api/ping` | Diagnóstico | Liveness (`{"status":"ok"}`) |
+| `WS` | `/api/ws/dashboard` | Front | Push del dashboard (forma de §4.2) |
 
 ---
 
