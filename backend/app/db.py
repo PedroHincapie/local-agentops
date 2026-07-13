@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterator
+from typing import Any
 
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
@@ -35,9 +36,34 @@ def _set_sqlite_pragma(dbapi_connection, _connection_record):  # type: ignore[no
     cursor.close()
 
 
+def _column_exists(conn: Any, table: str, column: str) -> bool:
+    rows = conn.exec_driver_sql(f"PRAGMA table_info({table})").fetchall()
+    return any(r[1] == column for r in rows)
+
+
+def _run_additive_migrations() -> None:
+    """Migraciones aditivas idempotentes (SQLModel ``create_all`` no altera tablas).
+
+    Solo columnas nuevas con DEFAULT (no destructivas). Alembic se difiere; ver plan.
+    """
+    migrations: list[tuple[str, str, str]] = [
+        # (tabla, columna, DDL) — provider: dimensión multi-provider; histórico = 'claude'.
+        (
+            "usage_snapshots",
+            "provider",
+            "ALTER TABLE usage_snapshots ADD COLUMN provider TEXT NOT NULL DEFAULT 'claude'",
+        ),
+    ]
+    with engine.begin() as conn:
+        for table, column, ddl in migrations:
+            if not _column_exists(conn, table, column):
+                conn.exec_driver_sql(ddl)
+
+
 def init_db() -> None:
-    """Crea las tablas si no existen (Alembic se difiere; ver plan, Hito 5)."""
+    """Crea las tablas si no existen y aplica migraciones aditivas (Alembic se difiere)."""
     SQLModel.metadata.create_all(engine)
+    _run_additive_migrations()
 
 
 def get_session() -> Iterator[Session]:

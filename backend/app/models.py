@@ -3,8 +3,11 @@
 Hito 0: ``Workday`` y ``UsageSnapshot`` (núcleo).
 Hito 1: ``Project`` y ``AgentSession`` (auto-detección de proyecto/sesión + métricas
 manuales). Hito 4: ``Recommendation`` (motor de recomendaciones). El resto
-(``usage_events``) se añade en hitos posteriores. NO existen tablas ``providers`` /
-``provider_capabilities`` (diseño multi-provider descartado en el MVP).
+(``usage_events``) se añade en hitos posteriores.
+
+Multi-provider: la dimensión de proveedor vive como la columna ``UsageSnapshot.provider``
+(claude | codex | gemini); NO hay tablas ``providers`` / ``provider_capabilities`` (no se
+reintroduce un catálogo de providers, solo se etiqueta el origen de cada snapshot).
 """
 from __future__ import annotations
 
@@ -78,8 +81,13 @@ class UsageSnapshot(SQLModel, table=True):
     captured_at: datetime = Field(default_factory=_utcnow, index=True)
 
     # Clasificación de origen (CLAUDE.md: nunca inventar valores).
+    # provider  = la cuenta/suscripción (claude | codex | gemini).
+    # source_name = el mecanismo de captura (statusline | ccusage | codex_rollout |
+    #               gemini_otel | manual). Se separan a propósito: un proveedor puede
+    #               tener varios mecanismos (Claude: statusline + ccusage).
+    provider: str = "claude"
     source_type: str = "captured"  # official | captured | estimated | manual
-    source_name: str = "statusline"  # statusline | ccusage | manual
+    source_name: str = "statusline"  # statusline | ccusage | codex_rollout | gemini_otel | manual
     data_quality: str = "ok"  # flag simple en Hito 0; JSON detallado en hitos siguientes
 
     # Dedup: hash de contenido del tick (CLAUDE.md / contrato §2).
