@@ -54,7 +54,7 @@ nunca inventa un valor.
 ```
 Claude Code → hook (statusline) → POST /api/snapshots → normalizador → SQLite
                                                               ↓
-                       motor de recomendaciones → API REST → dashboard (SPA)
+     motor de recomendaciones → API REST + WebSocket (/api/ws/dashboard) → dashboard (SPA)
 
               ccusage (reconciliador cada 5 min) ─────────────┘  (red de seguridad)
 ```
@@ -70,8 +70,14 @@ La captura es **híbrida**, con dos fuentes detrás de una única interfaz inter
   estuvo caído y recomputar agregados. Es **reconciliación, no** captura primaria; sus snapshots
   no degradan el estado en vivo (no traen `rate_limits`).
 
-Todo corre como **un único proceso** FastAPI/Uvicorn que sirve la API y (si existe el build) el
-SPA estático.
+Todo corre como **un único proceso** FastAPI/Uvicorn que sirve la API, empuja el estado del
+dashboard por WebSocket (`/api/ws/dashboard`) y sirve el SPA estático del repo
+(`frontend/public/`) en el mismo origen.
+
+**Push en tiempo real.** Un `ConnectionManager` mantiene las conexiones del dashboard; tras cada
+mutación relevante los routers hacen `broadcast()` del estado fresco, y al conectar el cliente
+recibe el payload inicial (la misma forma que `GET /api/dashboard`). El WebSocket es una
+optimización de push: la fuente de verdad sigue siendo la API REST, no un contrato aparte.
 
 ### Auto-detección
 
@@ -145,6 +151,8 @@ completo (shapes de request/response) está en [`docs/API_CONTRACT.md`](docs/API
 | `GET /api/recommendations` | Recomendaciones activas. |
 | `POST /api/recommendations/{id}/ack` | Marca una recomendación como vista. |
 | `GET /api/health` | Salud del backend, fuentes y scheduler. |
+| `GET /api/ping` | Sonda de vida (liveness). |
+| `WS /api/ws/dashboard` | Canal de push; payload = forma de `GET /api/dashboard`. |
 
 ---
 
@@ -179,8 +187,10 @@ SQLite (WAL), ids UUID, fechas en UTC. Tablas del MVP:
 
 - **Backend:** FastAPI + Uvicorn, SQLModel/SQLAlchemy + Pydantic sobre SQLite, APScheduler (job
   reconciliador de 5 min), `httpx`/subprocess para invocar `ccusage`. Configuración por `.env`.
-- **Frontend:** SPA estática (típicamente React + Vite) entregada por **Claude Design**. Consume
-  solo la API documentada y el backend la sirve como estáticos. **No está en este repositorio.**
+- **Frontend:** SPA estática **en este repositorio** (`frontend/public/`: `index.html` +
+  `support.js`, sin paso de build). Consume la API documentada y el WebSocket
+  `/api/ws/dashboard`; el backend la sirve en el mismo origen (`/`) desde
+  `AGENTOPS_FRONTEND_DIST` (por defecto `../frontend/public`).
 
 ## Instalación y uso
 
@@ -205,8 +215,8 @@ Luego apunta tu `~/.claude/settings.json` al hook para que capture tu uso real:
 }
 ```
 
-Comprobaciones: `curl -s http://127.0.0.1:8787/api/ping`, documentación interactiva en
-`http://127.0.0.1:8787/docs`.
+Comprobaciones: el **dashboard** en `http://127.0.0.1:8787/`, `curl -s
+http://127.0.0.1:8787/api/ping`, y la documentación interactiva en `http://127.0.0.1:8787/docs`.
 
 ### Desarrollo
 
@@ -252,5 +262,6 @@ tocar el dashboard.
 
 ---
 
-**Estado:** backend MVP implementado (captura en vivo vía hook + reconciliador). El SPA lo entrega
-Claude Design contra el contrato de `docs/API_CONTRACT.md`.
+**Estado:** MVP implementado y corriendo en `main` (Hitos 0–4 + endpoints del contrato §4; 43
+tests en verde). Captura en vivo vía hook + reconciliador `ccusage`, push por WebSocket
+(`/api/ws/dashboard`) y SPA servido en el mismo origen desde `frontend/public/`.

@@ -88,4 +88,4 @@ mypy app
 
 - The README and all product docs are written in **Spanish**. Match that language for user-facing docs and commit messages in the existing style (e.g. `docs: define Local AgentOps product and architecture`).
 - The MVP was built **walking-skeleton first** (one hook snapshot → SQLite → dashboard) and that skeleton is now complete; the normalizer, reconciler, recommendation engine, and WebSocket push are all in place. Keep new work incremental and behind the same seams.
-- Reconciling `README.md` with the Claude Code design is pending; if you touch product docs, prefer aligning them to this file + `docs/API_CONTRACT.md` rather than the other way around.
+- `README.md` has been reconciled to the Claude Code design (Claude-Code-only, port 8787, in-repo `frontend/public/` SPA, WebSocket push). If you touch product docs, keep aligning them to this file + `docs/API_CONTRACT.md` rather than the other way around.
