@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 import copy
+import subprocess
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from app.db import init_db
 from app.main import app
-from app.services.sessions import get_large_files
+from app.services.sessions import derive_git_branch, get_large_files
 
 client = TestClient(app)
 
@@ -22,8 +23,10 @@ def test_sesion_se_autodetecta_y_aparece_en_dashboard(raw_statusline: dict) -> N
     assert cs["id"] == raw_statusline["session_id"]
     assert cs["project_name"] == "proyecto-agentOps"
     assert cs["model_name"] == "Opus 4.8"
-    # git_branch se deriva del repo real del proyecto (rama actual del checkout).
-    assert cs["git_branch"]  # no None: estamos en un repo git
+    # git_branch se deriva del repo del proyecto; en CI el path del fixture no existe
+    # (o el checkout está en detached HEAD) -> puede ser None. La derivación se prueba
+    # de forma hermética en test_derive_git_branch_*.
+    assert "git_branch" in cs
     # Métricas manuales aún sin anotar.
     assert cs["task_type"] is None
     assert cs["objective"] is None
@@ -110,6 +113,25 @@ def test_anotaciones_sobreviven_a_nuevos_snapshots(raw_statusline: dict) -> None
     current = client.get("/api/sessions/current").json()
     assert current["objective"] == "Documentar el enrolamiento"
     assert current["task_type"] == "documentación"
+
+
+def test_derive_git_branch_repo_temporal(tmp_path: Path) -> None:
+    """Derivación hermética: rama de un repo git temporal (independiente del entorno)."""
+    def git(*args: str) -> None:
+        subprocess.run(["git", "-C", str(tmp_path), *args], check=True, capture_output=True)
+
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    git("checkout", "-b", "rama-x")
+    (tmp_path / "f.txt").write_text("x")
+    git("add", ".")
+    # Identidad inline: el runner de CI puede no tener git user configurado.
+    git("-c", "user.name=t", "-c", "user.email=t@t.co", "commit", "-m", "init")
+    assert derive_git_branch(str(tmp_path)) == "rama-x"
+
+
+def test_derive_git_branch_sin_repo(tmp_path: Path) -> None:
+    assert derive_git_branch(str(tmp_path / "no-es-repo")) is None
+    assert derive_git_branch(None) is None
 
 
 def test_large_files_excluye_ruido_de_build(tmp_path: Path) -> None:

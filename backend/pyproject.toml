@@ -1,3 +1,12 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# Declarado explícitamente: evita el auto-discovery de setuptools, que en local
+# ve `data/` (SQLite, gitignored) como un segundo paquete y rompe el install.
+packages = ["app"]
+
 [project]
 name = "local-agentops-backend"
 version = "0.1.0"
