@@ -12,7 +12,7 @@ from sqlmodel import Session, select
 
 from app.models import UsageSnapshot, Workday
 from app.normalizer import normalize
-from app.services.recommendations import refresh_for_snapshot
+from app.services.recommendations import refresh_for_snapshot, refresh_switch_provider
 from app.services.sessions import get_or_create_session
 from app.services.status import derive_status
 
@@ -101,6 +101,11 @@ def ingest(session: Session, raw: dict[str, Any]) -> dict[str, Any]:
         status,
         fields.get("rate_limit_5h_percentage"),
         fields.get("rate_limit_7d_percentage"),
+    )
+    # Consejo de cambio de proveedor (advisory), evaluado con datos de TODOS los
+    # proveedores disponibles. Flujo independiente del de estado.
+    refresh_switch_provider(
+        session, workday.id, agent_session.id if agent_session else None
     )
 
     session.commit()

@@ -20,6 +20,7 @@ from app.capture.codex import CodexSource
 from app.config import settings
 from app.db import engine
 from app.models import UsageSnapshot, Workday
+from app.services.recommendations import refresh_switch_provider
 from app.services.reconciler_state import state
 from app.services.sessions import close_idle_sessions
 
@@ -118,5 +119,12 @@ def enabled_sources() -> list[CaptureSource]:
 
 
 def reconcile_all() -> list[dict[str, Any]]:
-    """Una pasada por cada fuente habilitada. Lo invoca el scheduler."""
-    return [reconcile_once(src) for src in enabled_sources()]
+    """Una pasada por cada fuente habilitada + reevalúa el consejo de cambio de proveedor."""
+    results = [reconcile_once(src) for src in enabled_sources()]
+    # Con datos frescos de todas las fuentes, reevalúa switch_provider una vez.
+    with Session(engine) as db:
+        workday = _active_workday(db)
+        if workday is not None:
+            refresh_switch_provider(db, workday.id)
+            db.commit()
+    return results
