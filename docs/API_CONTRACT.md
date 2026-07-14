@@ -98,13 +98,40 @@ Si el snapshot es idéntico al anterior: `"deduplicated": true` y `snapshot_id: 
 
 ### 4.2 `GET /api/dashboard` — vista consolidada (la que consume el front)
 
-Es el endpoint principal para Claude Design. Devuelve todo lo necesario para pintar el dashboard en una sola llamada.
+Es el endpoint principal del front. Devuelve todo lo necesario para pintar el dashboard en una sola llamada.
+
+**Multi-provider.** El top-level (`status`, `metrics`, `current_session`) describe el **proveedor activo** = el del último snapshot primario entre todos (statusline→claude, codex_rollout→codex, gemini_otel→gemini). Además:
+- `active_provider` — el proveedor en el que trabajas ahora (o `null` si no hay datos).
+- `recommended_provider` — el proveedor con **más margen** (ranking interno 100 − max ventanas); base del consejo `switch_provider`.
+- `providers[]` — una entrada por proveedor con **métricas nativas** (el front las muestra lado a lado). Ventanas ausentes → `null` (no se inventan).
 
 **Response `200 OK`:**
 ```json
 {
   "generated_at": "2026-06-27T13:45:12Z",
   "status": "green",
+  "active_provider": "claude",
+  "recommended_provider": "claude",
+  "providers": [
+    {
+      "provider": "claude",
+      "status": "green",
+      "model_name": "Opus 4.8",
+      "five_hour": { "used_percentage": 45, "resets_at": "2026-06-27T17:00:00Z", "resets_in_seconds": 11688, "resets_in_human": "3h 14m", "data_quality": "official" },
+      "seven_day": { "used_percentage": 7, "resets_at": "2026-07-03T07:00:00Z", "resets_in_seconds": 495288, "resets_in_human": "5d 17h", "data_quality": "official" },
+      "last_snapshot_at": "2026-06-27T13:45:00Z",
+      "data_quality": "ok"
+    },
+    {
+      "provider": "codex",
+      "status": "yellow",
+      "model_name": "gpt-5.5",
+      "five_hour": null,
+      "seven_day": { "used_percentage": 32, "resets_at": "2026-07-20T13:00:00Z", "resets_in_seconds": 570000, "resets_in_human": "6d 14h", "data_quality": "official" },
+      "last_snapshot_at": "2026-06-27T13:40:00Z",
+      "data_quality": "ok"
+    }
+  ],
   "workday": {
     "id": "2026-06-27",
     "date": "2026-06-27",
@@ -164,10 +191,19 @@ Es el endpoint principal para Claude Design. Devuelve todo lo necesario para pin
       "severity": "info",
       "message": "Uso bajo. Continúa trabajando con normalidad.",
       "reason": "Ventana de 5h al 45%, 7d al 7%."
+    },
+    {
+      "id": "rec_02",
+      "recommendation_type": "switch_provider",
+      "severity": "warning",
+      "message": "Te queda más margen en Codex. Considera cambiar de Claude a Codex para no depender del saldo de Claude.",
+      "reason": "Claude: red (15% de margen); Codex: 95% de margen."
     }
   ]
 }
 ```
+
+> **Nota multi-provider.** La recomendación `switch_provider` es un flujo **independiente** del de estado (`continue`/`reduce_context`/…): ambos pueden estar activos a la vez. Es **advisory** — el sistema sugiere el proveedor con más margen, no enruta ni lanza trabajo.
 
 ---
 
@@ -294,7 +330,7 @@ Lo único que el usuario ingresa a mano.
 
 `POST /api/recommendations/{id}/ack` → marca como vista. Response: la recomendación con `acknowledged_at` poblado.
 
-**Valores de `recommendation_type`:** `continue` · `reduce_context` · `split_task` · `new_session` · `reserve_for_critical` · `review_project` · `pause`.
+**Valores de `recommendation_type`:** `continue` · `reduce_context` · `split_task` · `new_session` · `reserve_for_critical` · `review_project` · `pause` · `switch_provider` (multi-provider, flujo independiente).
 **Valores de `severity`:** `info` · `warning` · `critical`.
 
 ---

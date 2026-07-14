@@ -1,18 +1,20 @@
 # Local AgentOps
 
-> Observabilidad operativa local para **Claude Code**.
+> Observabilidad operativa local **multi-provider** para tus agentes de código
+> (**Claude Code · Codex · Gemini**).
 
-Local AgentOps es una aplicación **local-first, de un solo usuario** que observa tu uso de
-Claude Code —ventanas de rate limit, tokens, contexto, costo y sesiones— y lo relaciona con
-jornadas y proyectos para que sepas, en cualquier momento del día, cuánto margen operativo te
-queda. Todo el procesamiento y almacenamiento es local: sin servidor central, sin telemetría
-externa. Cada usuario corre su propia instancia contra sus propios datos.
+Local AgentOps es una aplicación **local-first, de un solo usuario** que observa tu uso de los
+agentes de código —ventanas de rate limit, tokens, contexto, costo y sesiones— y lo relaciona con
+jornadas y proyectos para que sepas, en cualquier momento del día, **cuánto margen operativo te
+queda en cada cuenta** y puedas mover el trabajo al proveedor que tenga capacidad. Todo el
+procesamiento y almacenamiento es local: sin servidor central, sin telemetría externa. Cada
+usuario corre su propia instancia contra sus propios datos.
 
-> **Alcance del MVP.** Este MVP soporta **únicamente Claude Code**. No hay capa multi-provider:
-> es una decisión de producto para mantener la herramienta simple. La abstracción para futuros
-> providers queda "aparcada" detrás de una sola interfaz interna (`CaptureSource`), sin
-> reintroducir un catálogo de providers. La visión multi-provider (Codex, Gemini CLI) es trabajo
-> **futuro**, no parte del MVP.
+> **Alcance.** Empezó soportando solo Claude Code y ahora es **multi-provider**: Claude + OpenAI
+> Codex CLI (ambos en vivo) + Gemini CLI (pendiente de que habilites su telemetría local). La
+> dimensión de proveedor vive como una columna (`usage_snapshots.provider`); **no** se reintroduce
+> un catálogo de providers ni tablas `providers`/`provider_capabilities`. La comparación es
+> **advisory** y con **métricas nativas lado a lado** (no un número unificado forzado).
 >
 > El **contrato REST autoritativo** está en [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md) y la
 > guía de instalación en [`docs/INSTALL.md`](docs/INSTALL.md). Cuando este README y el contrato
@@ -37,9 +39,13 @@ nunca inventa un valor.
 
 ## Principios (invariantes)
 
-- **Solo Claude Code.** Ningún catálogo de providers ni tablas `providers`/`provider_capabilities`.
-- **Nunca inventar un valor.** Cada dato conserva su origen (`source_type`, `source_name`,
-  `data_quality`). Si una fuente falla, la métrica degrada a "no disponible", no a una suposición.
+- **Multi-provider sin capa de providers.** El proveedor es solo la columna
+  `usage_snapshots.provider` (`claude`|`codex`|`gemini`); ningún catálogo ni tablas
+  `providers`/`provider_capabilities`. Codex/Gemini se capturan **sin sesión** (snapshots
+  tagueados por proveedor). Comparación **advisory** con métricas nativas lado a lado.
+- **Nunca inventar un valor.** Cada dato conserva su origen (`provider`, `source_type`,
+  `source_name`, `data_quality`). Si una fuente falla, la métrica degrada a "no disponible", no a
+  una suposición (p. ej. `rate_limits` de Codex a veces viene `null`).
 - **La métrica operativa canónica** es `rate_limits.five_hour` / `rate_limits.seven_day` del
   statusline (coincide con la UI del plan de Anthropic). El costo en USD es **referencial** en
   planes de suscripción.
@@ -52,23 +58,30 @@ nunca inventa un valor.
 ## Cómo funciona
 
 ```
-Claude Code → hook (statusline) → POST /api/snapshots → normalizador → SQLite
-                                                              ↓
-     motor de recomendaciones → API REST + WebSocket (/api/ws/dashboard) → dashboard (SPA)
-
-              ccusage (reconciliador cada 5 min) ─────────────┘  (red de seguridad)
+Claude statusline → hook → POST /api/snapshots → normalizador → SQLite
+Codex / Gemini → fuente pull (reconciliador) ───────────────→  SQLite
+                                                                  ↓
+      motor de recomendaciones → API REST + WebSocket (/api/ws/dashboard) → dashboard (SPA)
 ```
 
-La captura es **híbrida**, con dos fuentes detrás de una única interfaz interna `CaptureSource`:
+Cada proveedor se captura detrás de la misma interfaz interna `CaptureSource`; el reconciliador
+(`reconcile_all`, cada 5 min) recorre las fuentes habilitadas:
 
-- **Hook del statusline (primaria, push).** Un script cableado en `~/.claude/settings.json`
-  renderiza tu statusline normal y, *fire-and-forget*, reenvía el JSON crudo de cada tick a
-  `POST /api/snapshots`. El **hook es tonto**: no transforma nada; toda la normalización vive en
-  el backend. Además guarda un respaldo local en `~/.agentops/statusline.jsonl`.
-- **Reconciliador ccusage (red de seguridad, pull).** Un job APScheduler cada 5 minutos invoca
-  `ccusage` (`ccusage blocks --active --json`) para recuperar uso ocurrido mientras el backend
-  estuvo caído y recomputar agregados. Es **reconciliación, no** captura primaria; sus snapshots
-  no degradan el estado en vivo (no traen `rate_limits`).
+- **Claude — hook del statusline (primaria, push)** + **`ccusage` (red de seguridad, pull).** El
+  script cableado en `~/.claude/settings.json` reenvía *fire-and-forget* el JSON crudo de cada tick
+  a `POST /api/snapshots` (el **hook es tonto**; la normalización vive en el backend). `ccusage`
+  recupera uso ocurrido mientras el backend estuvo caído.
+- **Codex — parser de rollouts (pull).** Lee el `rollout-*.jsonl` más reciente de
+  `~/.codex/sessions` y toma el último `rate_limits` (mapea `primary`/`secondary` a 5h/7d por
+  `window_minutes`) + tokens. Solo lee líneas de uso/límites, nunca la conversación. Tolera
+  `rate_limits: null`. Se activa con `AGENTOPS_CODEX_ENABLED=true`.
+- **Gemini — OpenTelemetry local (pull, pendiente).** Parsea `~/.gemini/telemetry.log`; el margen
+  es **estimado** contra la cuota RPD/TPM de tu tier. Requiere habilitar la telemetría local.
+
+**Proveedor activo y recomendado.** El top-level del dashboard describe el **proveedor activo** (el
+del último snapshot primario); `providers[]` lleva las métricas nativas de cada uno y
+`recommended_provider` señala el de más margen. Cuando el activo tiene poco margen y otro tiene
+más, se genera la recomendación **advisory** `switch_provider` (nombra el proveedor, no enruta).
 
 Todo corre como **un único proceso** FastAPI/Uvicorn que sirve la API, empuja el estado del
 dashboard por WebSocket (`/api/ws/dashboard`) y sirve el SPA estático del repo
@@ -104,9 +117,10 @@ Cada métrica conserva su procedencia. Es el corazón de "no mentir con los dato
 | **`estimated`** | Calculado localmente. | `burn_rate` (USD/hora), proyecciones. |
 | **`manual`** | Ingresado por el usuario. | `objective`, `task_type` de la sesión. |
 
-`source_type` clasifica la procedencia; `source_name` es la fuente concreta (`statusline` /
-`ccusage` / `manual`); `data_quality` expresa confianza/completitud/frescura. Una métrica ausente
-es `null`, no `0`, y las agregaciones no mezclan bases contables incompatibles.
+`provider` es la cuenta (`claude`/`codex`/`gemini`); `source_type` clasifica la procedencia;
+`source_name` es el mecanismo concreto (`statusline` / `ccusage` / `codex_rollout` / `gemini_otel`
+/ `manual`); `data_quality` expresa confianza/completitud/frescura. Una métrica ausente es `null`,
+no `0`, y las agregaciones no mezclan bases contables incompatibles.
 
 ## Estado operativo
 
@@ -129,9 +143,13 @@ versiones anteriores las ventanas degradan a "no disponible".
 
 Reglas deterministas y explicables sobre el estado y las ventanas. Genera una recomendación nueva
 solo cuando el estado **cambia** (no repite); la anterior queda superseded. Cada recomendación
-guarda su `reason` (p. ej. "Ventana de 5h al 45%, 7d al 7%."). Tipos previstos: `continue`,
-`reduce_context`, `split_task`, `new_session`, `reserve_for_critical`, `review_project`, `pause`.
+guarda su `reason` (p. ej. "Ventana de 5h al 45%, 7d al 7%."). Tipos: `continue`, `reduce_context`,
+`split_task`, `new_session`, `reserve_for_critical`, `review_project`, `pause` y `switch_provider`.
 Severidades: `info`, `warning`, `critical`.
+
+**`switch_provider`** es un flujo **independiente** del de estado (ambos pueden estar activos): se
+dispara cuando el proveedor activo no está en verde y otro tiene claramente más margen, y sugiere
+—advisory— cambiar a ese proveedor.
 
 ---
 
@@ -143,7 +161,7 @@ completo (shapes de request/response) está en [`docs/API_CONTRACT.md`](docs/API
 | Método y ruta | Propósito |
 |---|---|
 | `POST /api/snapshots` | Ingesta del hook (crudo). Idempotente, no bloqueante, deduplicada. |
-| `GET /api/dashboard` | Vista consolidada que consume el SPA (estado, ventanas, sesión, costo, recomendaciones). |
+| `GET /api/dashboard` | Vista consolidada que consume el SPA (estado, ventanas, sesión, costo, recomendaciones, y multi-provider: `providers[]` + `active_provider` + `recommended_provider`). |
 | `GET /api/sessions/current` | Sesión activa y su último snapshot. |
 | `PATCH /api/sessions/{id}` | Anota las métricas manuales (`objective`, `task_type`). |
 | `GET /api/usage/today` | Agregados de la jornada actual. |
@@ -166,17 +184,18 @@ SQLite (WAL), ids UUID, fechas en UTC. Tablas del MVP:
   `repository_path` único).
 - **`agent_sessions`** — sesión por `session_external_id` (`session_id` de Claude Code), ligada a
   jornada y proyecto; `model`, `git_branch` (derivado), `task_type`/`objective` (manuales).
-- **`usage_snapshots`** — tabla núcleo. Cada tick normalizado: clasificación de origen
-  (`source_type`/`source_name`/`data_quality`), `content_hash` para dedup, identidad de
-  sesión/workspace, modelo/CLI, costo/actividad, contexto/tokens y las cuatro columnas oficiales
-  de `rate_limits` (5h/7d, porcentaje y `resets_at`).
+- **`usage_snapshots`** — tabla núcleo. Cada tick normalizado: **`provider`** (`claude`/`codex`/
+  `gemini`) + clasificación de origen (`source_type`/`source_name`/`data_quality`), `content_hash`
+  para dedup, identidad de sesión/workspace, modelo/CLI, costo/actividad, contexto/tokens y las
+  cuatro columnas oficiales de `rate_limits` (5h/7d, porcentaje y `resets_at`).
 - **`recommendations`** — recomendación operativa (`recommendation_type`, `severity`, `message`,
   `reason`, `acknowledged_at`). "Activa" = `acknowledged_at is null`.
 - **`usage_events`** — eventos operativos (fallos de captura, cambios de estado). *Pendiente en
   hitos posteriores.*
 
-> Las tablas `providers` / `provider_capabilities` de la visión multi-provider **no** forman parte
-> del MVP.
+> El proveedor es solo la columna `usage_snapshots.provider`; **no** hay tablas `providers` /
+> `provider_capabilities` (no se reintroduce un catálogo de providers). Codex/Gemini se capturan
+> **sin sesión**: persisten snapshots tagueados por proveedor sin crear `agent_sessions`.
 
 **Deduplicación:** ticks consecutivos idénticos se descartan por hash de contenido
 `(session_external_id + cost + rate_limits + context)`, para no inflar la serie temporal.
@@ -256,12 +275,14 @@ agotamiento con intervalos de confianza, exportación CSV/JSON, reportes diarios
 **Fase 3 — Empaquetado local.** Arranque como servicio (launchd/systemd), instalador, backup y
 restauración, configuración de retención y privacidad.
 
-**Fase 4+ — Multi-provider (futuro, fuera del MVP).** Nuevas fuentes (Codex, Gemini CLI) detrás de
-`CaptureSource`, comparando solo dimensiones realmente equivalentes. Añadir una fuente no debe
-tocar el dashboard.
+**Fase 4 — Multi-provider (en curso).** Columna `provider`, fuentes por proveedor detrás de
+`CaptureSource`, `providers[]` + margen por cuenta en el dashboard y recomendación advisory
+`switch_provider`. **Hecho:** Claude y **Codex**. **Pendiente:** **Gemini** (habilitar su
+telemetría local) y afinar la agregación de costo/histórico por proveedor.
 
 ---
 
-**Estado:** MVP implementado y corriendo en `main` (Hitos 0–4 + endpoints del contrato §4; 43
-tests en verde). Captura en vivo vía hook + reconciliador `ccusage`, push por WebSocket
-(`/api/ws/dashboard`) y SPA servido en el mismo origen desde `frontend/public/`.
+**Estado:** corriendo en `main`, **74 tests en verde** (CI en Python 3.11/3.13). Observabilidad
+**Claude + Codex** en vivo (statusline + `ccusage` para Claude; parser de rollouts para Codex),
+`providers[]` con margen por cuenta y consejo `switch_provider` en el dashboard, push por WebSocket
+(`/api/ws/dashboard`) y SPA servido en el mismo origen desde `frontend/public/`. Gemini pendiente.

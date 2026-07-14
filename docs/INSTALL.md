@@ -1,4 +1,4 @@
-# Instalación local — Local AgentOps (MVP Claude Code)
+# Instalación local — Local AgentOps (multi-provider: Claude · Codex · Gemini)
 
 Guía para dejar corriendo el backend y **conectar el hook del statusline** de Claude Code
 para que capture tu uso real. Todo es local, un solo usuario, sin telemetría externa.
@@ -58,7 +58,28 @@ curl -s http://127.0.0.1:8787/api/health | jq # database ok, scheduler, fuentes
 | `AGENTOPS_THRESHOLD_YELLOW/RED/CRITICAL` | `50/80/95` | Umbrales de estado sobre `peak = max(5h%, 7d%)`. |
 | `AGENTOPS_RECONCILE_INTERVAL_SECONDS` | `300` | Frecuencia del reconciliador ccusage. |
 | `AGENTOPS_SCHEDULER_ENABLED` | `true` | Ponlo en `false` para desactivar el reconciliador. |
-| `AGENTOPS_FRONTEND_DIST` | `../frontend/dist` | Si existe el build del SPA, se sirve en `/`. |
+| `AGENTOPS_SESSION_IDLE_MINUTES` | `120` | Cierre auto de sesión sin snapshots recientes. |
+| `AGENTOPS_FRONTEND_DIST` | `../frontend/public` | El SPA del repo se sirve en `/`. |
+| `AGENTOPS_CODEX_ENABLED` | `false` | Activa la captura de **Codex** (parser de rollouts). |
+| `AGENTOPS_CODEX_SESSIONS_DIR` | `~/.codex/sessions` | Dónde busca los `rollout-*.jsonl`. |
+| `AGENTOPS_GEMINI_ENABLED` | `false` | Activa la captura de **Gemini** (OTel local). |
+| `AGENTOPS_GEMINI_TELEMETRY_LOG` | `~/.gemini/telemetry.log` | Log de telemetría local de Gemini. |
+| `AGENTOPS_GEMINI_RPD` / `_TPM` | `0` / `0` | Cuota del tier para estimar el margen (`0` = desconocida). |
+
+### Multi-provider (Codex / Gemini)
+
+El backend observa **Claude + Codex + Gemini**. Claude va siempre (hook + `ccusage`). Para añadir
+los otros:
+
+- **Codex:** pon `AGENTOPS_CODEX_ENABLED=true`. El reconciliador leerá el `rollout-*.jsonl` más
+  reciente de `~/.codex/sessions` (solo las líneas de uso/límites, nunca la conversación).
+- **Gemini:** habilita la telemetría local en `~/.gemini/settings.json`
+  (`{ "telemetry": { "enabled": true, "target": "local", "outfile": "~/.gemini/telemetry.log" } }`),
+  úsalo un rato para que se pueble, y pon `AGENTOPS_GEMINI_ENABLED=true` (+ `RPD`/`TPM` de tu tier
+  para estimar el margen).
+
+Cada proveedor aparece como una card en el dashboard, con su margen nativo lado a lado; si el activo
+se queda sin margen y otro tiene más, verás el consejo **`switch_provider`**.
 
 ---
 
